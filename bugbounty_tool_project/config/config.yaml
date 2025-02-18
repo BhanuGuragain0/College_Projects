@@ -1,0 +1,81 @@
+# bugbounty_tool/config/config.yaml
+# ==================================
+# Enhanced configuration file for the Bug Bounty Automation Tool.
+# This file provides settings for scanning tools, AI analysis, logging,
+# scheduling, report generation, graphs, UI appearance, and wordlist defaults.
+
+tools:
+  nmap:
+    # Nmap does not require a wordlist.
+    args: ["-sV", "-A", "-T4", "{target}"]
+    timeout: 300      # Timeout in seconds
+    enabled: true
+  subfinder:
+    args: ["-d", "{target}"]
+    timeout: 180
+    enabled: true
+  dirsearch:
+    args: ["-u", "{target}", "-e", "*"]
+    timeout: 300
+    enabled: true
+  sqlmap:
+    args: ["-u", "{target}", "--batch"]
+    timeout: 600
+    enabled: true
+  nikto:
+    args: ["-h", "{target}"]
+    timeout: 180
+    enabled: true
+  gobuster:
+    args: ["dir", "-u", "{target}", "-w", "wordlists/common.txt"]
+    timeout: 300
+    enabled: true
+  wfuzz:
+    args: ["-c", "-z", "file,wordlists/common.txt", "{target}"]
+    timeout: 300
+    enabled: true
+  wpscan:
+    args: ["--url", "{target}", "--enumerate", "vp"]
+    timeout: 300
+    enabled: true
+
+openai:
+  api_key: "your_openai_api_key"  # Replace with your actual OpenAI API key
+  model: "gpt-4"
+  temperature: 0.7
+
+logging:
+  level: DEBUG        # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file: "logs/debug.log"
+  maxBytes: 10485760  # 10 MB
+  backupCount: 5
+
+scheduler:
+  enabled: false      # Set to true to enable scheduled scans
+  interval: 60        # Interval in minutes between scans
+
+pdf_report:
+  enabled: true
+  title: "Bug Bounty Automation Tool Report"
+  author: "Shadow@Bhanu"
+  font: "Courier"
+  font_size: 12
+
+graph:
+  enabled: true
+  type: "bar"         # Options: bar, line, pie
+  color: "green"
+
+ui:
+  default_theme: "Green Neon"
+  available_themes:
+    - "Green Neon"
+    - "Blue Neon"
+    - "Red Neon"
+  font: "JetBrains Mono"  # Use a monospaced hacker-style font if installed (otherwise falls back)
+  font_size: 12
+
+wordlists:
+  path: "wordlists"
+  default: "common.txt"
+
