@@ -1,62 +1,99 @@
+
+
+```markdown
 # Password Cracker
 
-Password Cracker is a C-based application that attempts to crack MD5 hashed passwords using a dictionary file. The dictionary file can contain either plain text passwords or hashed entries. The program uses predefined key ranges for MD5 hashing and can handle both hashed and plain text user inputs.
+Password Cracker is an advanced, C-based password cracking tool that attempts to crack hashed passwords (MD5 and SHA256) using a dictionary file. The dictionary file can contain either plain text passwords or hashed entries. The tool leverages predefined key ranges for enhanced salting and includes configurable thread count, signal handling for graceful shutdown, and performance measurement. It is designed for efficient, real-world usage.
 
 ## Features
 
-- Supports both plain text and hashed dictionary files.
-- Can handle both plain text and hashed user inputs.
-- Uses predefined key ranges for enhanced MD5 hashing.
-- Simple and efficient command-line interface.
+- **Dual Dictionary Support:**  
+  Works with both plain text and hashed dictionary files.
+
+- **Flexible Input Handling:**  
+  Accepts both plain text and pre-hashed user inputs.
+
+- **Multiple Hash Algorithms:**  
+  Supports MD5 and SHA256 hashing.
+
+- **Enhanced Salting:**  
+  Uses a predefined key range to improve hash diversity and cracking potential.
+
+- **Configurable Thread Count:**  
+  Optimize performance by setting the number of worker threads.
+
+- **Graceful Shutdown:**  
+  Supports SIGINT/SIGTERM to safely terminate processing.
+
+- **Performance Measurement:**  
+  Displays the total processing time for each cracking attempt.
+
+- **Simple Command-Line Interface:**  
+  Easily run the tool with a few parameters.
 
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
 
-- GCC (GNU Compiler Collection)
-- OpenSSL library
+- **GCC (GNU Compiler Collection)**
+- **OpenSSL library**
+
+### Installing OpenSSL
+
+- **Ubuntu/Debian:**  
+  `sudo apt-get install libssl-dev`
+
+- **CentOS/Fedora:**  
+  `sudo yum install openssl-devel`
+
+- **macOS (with Homebrew):**  
+  `brew install openssl`
 
 ## Installation
 
-1. **Install OpenSSL**:
+1. **Compile the Code:**
 
-2. **Compile the code**:
-
-`gcc password_cracker.c -o password_cracker -lssl -lcrypto`
+   ```bash
+   gcc password_cracker.c -o password_cracker -lssl -lcrypto -lpthread
+   ```
 
 ## Usage
 
 Run the compiled binary with the required command-line arguments:
 
+```bash
+./password_cracker <dictionary_path> <is_hashed> <user_input> <is_input_hashed> <algorithm> [num_threads]
+```
 
-`./password_cracker <dictionary_path> <is_hashed> <user_input> <is_input_hashed>`
-like this
-`./password_cracker /home/bhanu/Desktop/passwords.txt 1 5d41402abc4b2a76b9719d911017c592 1`
+### Example
 
+```bash
+./password_cracker /home/user/passwords.txt 1 5d41402abc4b2a76b9719d911017c592 1 md5 4
+```
+
+Where:
 - `<dictionary_path>`: Path to the dictionary file.
-- `<is_hashed>`: `1` if the dictionary file contains hashed entries in the format `password:hash`, `0` if it contains plain text passwords.
-- `<user_input>`: The hashed MD5 sum or plain text password to be cracked.
-- `<is_input_hashed>`: `1` if `<user_input>` is a hashed MD5 sum, `0` if it is a plain text password.
+- `<is_hashed>`: `1` if the dictionary file contains hashed entries, `0` if it contains plain text passwords.
+- `<user_input>`: The hashed value (MD5/SHA256) or plain text password to be cracked.
+- `<is_input_hashed>`: `1` if `<user_input>` is already hashed, `0` if it is plain text.
+- `<algorithm>`: The hash algorithm to use (`md5` or `sha256`).
+- `[num_threads]`: *(Optional)* Number of threads to use (default is 4).
 
-
-
-### Sample Output
+## Sample Output
 
 ```
-Comparing: dictionary='07787964a1e74335c923a46348e1e865', generated='5d41402abc4b2a76b9719d911017c592'
-Comparing: dictionary='0acf4539a14b3aa27deeb4cbdf6e989f', generated='5d41402abc4b2a76b9719d911017c592'
-Comparing: dictionary='2345f10bb948c5665ef91f6773b3e455', generated='5d41402abc4b2a76b9719d911017c592'
-Comparing: dictionary='00bfc8c729f5d4d529a412b12c58ddd2', generated='5d41402abc4b2a76b9719d911017c592'
-Comparing: dictionary='aae039d6aa239cfc121357a825210fa3', generated='5d41402abc4b2a76b9719d911017c592'
-Comparing: dictionary='5badcaf789d3d1d09794d8f021f40f0e', generated='5d41402abc4b2a76b9719d911017c592'
-Comparing: dictionary='5d41402abc4b2a76b9719d911017c592', generated='5d41402abc4b2a76b9719d911017c592'
-Match found! Entry: 'hello'
+Generated hash for input 'hello': 5d41402abc4b2a76b9719d911017c592
+Processing dictionary '/home/user/passwords.txt' using 4 thread(s)...
+Match found! Entry: 'hello', Key: 'FD469501'
+Processing complete in 0.532 seconds.
 ```
 
 ## Contributing
 
-Contributions are welcome! Please fork this repository, make your changes, and submit a pull request.
+Contributions are welcome! Please fork this repository, create a feature branch, and submit a pull request. For major changes, open an issue first to discuss your proposed modifications.
 
 ## License
 
 This project is licensed under the MIT License.
+```
+
