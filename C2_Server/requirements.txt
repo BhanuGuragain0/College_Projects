@@ -1,0 +1,9 @@
+Flask==2.3.2
+Flask-Login==0.6.2
+Flask-Talisman==1.0.0
+Flask-Limiter==2.8.1
+python-dotenv==1.0.0
+celery==5.3.1
+redis==4.5.5
+cryptography==41.0.2
+pyarmor==7.7.4

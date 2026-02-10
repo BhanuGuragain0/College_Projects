@@ -1,0 +1,26 @@
+type: object
+properties:
+  tools:
+    type: object
+    additionalProperties:
+      type: object
+      properties:
+        args:
+          type: array
+          items:
+            type: string
+  openai:
+    type: object
+    properties:
+      api_key:
+        type: string
+      model:
+        type: string
+        default: "gpt-4"
+      temperature:
+        type: number
+        default: 0.7
+    required:
+      - api_key
+required:
+  - tools

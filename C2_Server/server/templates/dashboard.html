@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>C2 Dashboard</title>
+    <!-- Link to external CSS stylesheet -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/main.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+    <script>
+      var socket = io.connect("https://" + document.domain + ":5001");
+      socket.on('connect', function() {
+          console.log("Connected to real-time dashboard.");
+          socket.emit('request_update');
+      });
+      socket.on('update', function(data) {
+          document.getElementById("bots").innerText = JSON.stringify(data.bots, null, 2);
+          document.getElementById("tasks").innerText = JSON.stringify(data.tasks, null, 2);
+      });
+    </script>
+</head>
+<body>
+    <h1>C2 Server Dashboard</h1>
+    <h2>Bots</h2>
+    <pre id="bots">{{ bots|tojson(indent=2) }}</pre>
+    <h2>Tasks</h2>
+    <pre id="tasks">{{ tasks|tojson(indent=2) }}</pre>
+    <a href="{{ url_for('logout') }}">Logout</a>
+</body>
+</html>

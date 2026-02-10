@@ -1,0 +1,337 @@
+@keyframes fish {
+  0%, 70% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  color: #515a6e;
+  background-color: #d5eafc;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+a {
+  cursor: pointer;
+  color: #000;
+  text-decoration: none;
+  transition: all 0.3s;
+  &:hover {
+    color: #217093;
+  }
+}
+
+.fish, .fish-shadow {
+  width: 640px;
+  height: auto;
+  position: absolute;
+  top: -145px;
+  left: -177px;
+  animation: fish 3s forwards ease-in-out;
+
+  path {
+    fill: #fff;
+    &:hover {
+      fill: #217093;
+    }
+  }
+
+  .line {
+    fill: none;
+  }
+}
+
+.fish-shadow-con {
+  opacity: 0.2;
+  filter: blur(10px);
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.fish-shadow {
+  top: -125px;
+  left: -157px;
+  path {
+    fill: #211922;
+    &:hover {
+      fill: #211922;
+    }
+  }
+
+  -webkit-filter: url("#goo");
+  filter: url(#goo);
+  opacity: 0.4;
+}
+
+body {
+  background-color: #119ec1;
+  position: relative;
+  width: auto;
+  height: 100vh;
+  font-size: 16px;
+  font-family: 'Source Sans Pro', sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+.error-text {
+  color: #721c24;
+  padding: 8px 10px;
+  text-align: center;
+  border-radius: 5px;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  margin-bottom: 10px;
+  display: none;
+}
+
+form {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  background-color: #111d3a;
+  margin: 0;
+  padding: 1.25em;
+  box-sizing: border-box;
+  border: solid 1px #ddd;
+  border-radius: 0.5em;
+  font-family: 'Source Sans Pro', sans-serif;
+}
+
+form .svgContainer {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 1em;
+  border-radius: 50%;
+  pointer-events: none;
+
+  div {
+    position: relative;
+    width: 100%;
+    height: 0;
+    overflow: hidden;
+    border-radius: 50%;
+    padding-bottom: 100%;
+  }
+
+  .mySVG {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  &:after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    width: inherit;
+    height: inherit;
+    box-sizing: border-box;
+    border: solid 2.5px #217093;
+    border-radius: 50%;
+  }
+}
+
+form .inputGroup {
+  margin: 0 0 1.5em;
+  padding: 0;
+  position: relative;
+}
+
+form .inputGroup:last-of-type {
+  margin-bottom: 0;
+}
+
+form label {
+  margin: 0 0 10px;
+  display: block;
+  font-size: 1.25em;
+  color: #217093;
+  font-weight: 700;
+  font-family: inherit;
+}
+
+form input[type='email'],
+form input[type="text"],
+form input[type="number"],
+form input[type="url"],
+form input[type="search"],
+form input[type="password"] {
+  display: block;
+  margin: 0;
+  padding: 0 0.75em 0;
+  background-color: #f3fafd;
+  border: solid 2px #217093;
+  border-radius: 4px;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  height: 40px;
+  font-size: 1.20em;
+  color: #353538;
+  font-weight: 600;
+  font-family: inherit;
+  transition: box-shadow 0.2s linear, border-color 0.25s ease-out;
+}
+
+form input[type='email']:focus,
+form input[type="text"]:focus,
+form input[type="number"]:focus,
+form input[type="url"]:focus,
+form input[type="search"]:focus,
+form input[type="password"]:focus {
+  outline: none;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, .1);
+  border: solid 2px #4eb8dd;
+}
+
+form button {
+  display: block;
+  margin: 0;
+  padding: 0.65em 1em 1em;
+  background-color: #4eb8dd;
+  border: none;
+  border-radius: 4px;
+  box-sizing: border-box;
+  box-shadow: none;
+  width: 100%;
+  height: 65px;
+  font-size: 1.55em;
+  color: #fff;
+  font-weight: 600;
+  font-family: inherit;
+  transition: background-color 0.2s ease-out;
+}
+
+form button:hover,
+form button:active {
+  background-color: #217093;
+}
+
+form .inputGroup1 .helper {
+  position: absolute;
+  z-index: 1;
+  font-family: inherit;
+}
+
+form .inputGroup1 .helper1 {
+  top: 0;
+  left: 0;
+  transform: translate(1em, 2.2em) scale(1);
+  transform-origin: 0 0;
+  color: #217093;
+  font-size: 1.55em;
+  font-weight: 400;
+  opacity: 0.65;
+  pointer-events: none;
+  transition: transform 0.2s ease-out, opacity 0.2s linear;
+}
+
+form .inputGroup1.focusWithText .helper {
+  transform: translate(1em, 1.55em) scale(0.6);
+  opacity: 1;
+}
+
+form .inputGroup2 input[type="password"] {
+  padding: 0.4em 1em 0.5em;
+}
+
+form .inputGroup2 input[type="text"] {
+  padding: 0.025em 1em 0;
+}
+
+form .inputGroup2 #showPasswordToggle {
+  display: block;
+  padding: 0 0 0 1.45em;
+  position: absolute;
+  top: 0.25em;
+  right: 0;
+  font-size: 1em;
+}
+
+form .inputGroup2 #showPasswordToggle input {
+  position: absolute;
+  z-index: -1;
+  opacity: 0;
+}
+
+form .inputGroup2 #showPasswordToggle .indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 0.85em;
+  width: 0.85em;
+  background-color: #3b3b3b;
+  border: solid 2px #217093;
+  border-radius: 3px;
+}
+
+form .inputGroup2 #showPasswordToggle .indicator:after {
+  content: "";
+  position: absolute;
+  left: 0.25em;
+  top: 0.025em;
+  width: 0.2em;
+  height: 0.5em;
+  border: solid #217093;
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+  visibility: hidden;
+}
+
+form .inputGroup2 #showPasswordToggle input:checked ~ .indicator:after {
+  visibility: visible;
+}
+
+form .inputGroup2 #showPasswordToggle input:focus ~ .indicator,
+form .inputGroup2 #showPasswordToggle input:hover ~ .indicator {
+  border-color: #4eb8dd;
+}
+
+form .inputGroup2 #showPasswordToggle input:disabled ~ .indicator {
+  opacity: 0.5;
+}
+
+form .inputGroup2 #showPasswordToggle input:disabled ~ .indicator:after {
+  visibility: hidden;
+}
+
+.link {
+  align-items: center;
+  color: #217093;
+  font-size: 20px;
+}
+
+.link .link1 {
+  color: rgb(255, 255, 255);
+  text-decoration: none;
+}
+
+.link .link1:hover {
+  text-decoration: underline;
+}

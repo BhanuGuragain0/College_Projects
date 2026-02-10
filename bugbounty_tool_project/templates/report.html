@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bug Bounty Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; }
+        h1 { color: #333; }
+        pre { background: #eee; padding: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Bug Bounty Report</h1>
+    {% for tool, output in results.items() %}
+    <h2>{{ tool }}</h2>
+    <pre>{{ output }}</pre>
+    {% endfor %}
+</body>
+</html>
