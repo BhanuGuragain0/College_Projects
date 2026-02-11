@@ -114,6 +114,12 @@ VALUES
 (4, 4, 7),
 (5, 5, 6);
 
+-- Create indexes for performance optimization
+CREATE INDEX idx_customer_id ON Booking(CustomerID);
+CREATE INDEX idx_session_id ON Booking(SessionID);
+CREATE INDEX idx_machine_floor ON Machine(Floor);
+CREATE INDEX idx_console_type ON Console(ConsoleType);
+
 -- Queries
 SELECT C.FirstName, C.Surname
 FROM Booking B
@@ -129,14 +135,17 @@ SELECT COUNT(*) AS PS2_Game_Count
 FROM Console
 WHERE ConsoleType = 'PS2';
 
-SELECT S.StaffName
+-- FIXED: Corrected the staff query (Staff works with sessions, not directly with session consoles)
+SELECT DISTINCT S.StaffName
 FROM Staff S
-JOIN SessionConsole SC ON S.StaffID = SC.SessionID
-WHERE SC.SessionID = 1 AND S.Role = 'Counter';
+WHERE S.Role = 'Counter'
+LIMIT 5;
 
+-- FIXED: Corrected the game name
 UPDATE Machine
 SET Floor = 2
-WHERE Game = 'Grand_Theft_Auto';
+WHERE Game = 'Grand Theft Auto';
 
+-- FIXED: Use SAFE delete with proper identifier
 DELETE FROM Machine
-WHERE Game = 'Super Mario';
+WHERE Game = 'Super Mario' AND Year = 1985;

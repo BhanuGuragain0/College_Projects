@@ -1,6 +1,7 @@
 import csv
 import random
 import logging
+import os
 from pathlib import Path
 from typing import List, Dict, Union
 
@@ -10,7 +11,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-def generate_email_dataset(num_emails: int, phishing_texts: List[str], non_phishing_texts: List[str], file_path: Union[str, Path], balance_dataset: bool = False) -> None:
+def generate_email_dataset(num_emails: int, phishing_texts: List[str], non_phishing_texts: List[str], file_path: Union[str, Path], balance_dataset: bool = False, overwrite: bool = False) -> None:
     """
     Generate a dataset of phishing and non-phishing emails and save it to a CSV file.
 
@@ -20,6 +21,7 @@ def generate_email_dataset(num_emails: int, phishing_texts: List[str], non_phish
         non_phishing_texts (List[str]): List of non-phishing email templates.
         file_path (Union[str, Path]): File path for the output CSV.
         balance_dataset (bool): Whether to balance the number of phishing and non-phishing emails.
+        overwrite (bool): Whether to overwrite existing file.
     """
     # Validation
     if num_emails <= 0:
@@ -28,6 +30,13 @@ def generate_email_dataset(num_emails: int, phishing_texts: List[str], non_phish
 
     if not phishing_texts or not non_phishing_texts:
         logging.error("Phishing and non-phishing texts must not be empty.")
+        return
+
+    file_path = Path(file_path)
+    
+    # Check if file exists
+    if file_path.exists() and not overwrite:
+        logging.warning(f"File {file_path} already exists. Set overwrite=True to replace.")
         return
 
     # Generate phishing emails (label 1)
@@ -61,43 +70,68 @@ def generate_email_dataset(num_emails: int, phishing_texts: List[str], non_phish
 
     # Write to CSV
     try:
-        file_path = Path(file_path)
         file_path.parent.mkdir(parents=True, exist_ok=True)
         with file_path.open('w', newline='', encoding='utf-8') as csvfile:
             fieldnames = ['text', 'label']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(all_emails)
-        logging.info(f"Successfully generated {len(all_emails)} emails (Phishing: {sum(1 for email in all_emails if email['label'] == 1)}, Non-Phishing: {sum(1 for email in all_emails if email['label'] == 0)}) and saved to '{file_path}'.")
+        
+        phishing_count = sum(1 for email in all_emails if email['label'] == 1)
+        non_phishing_count = sum(1 for email in all_emails if email['label'] == 0)
+        logging.info(f"✓ Successfully generated {len(all_emails)} emails (Phishing: {phishing_count}, Non-Phishing: {non_phishing_count}) and saved to '{file_path}'.")
     except Exception as e:
-        logging.error(f"Error writing to file: {e}")
+        logging.error(f"✗ Error writing to file: {e}")
 
 def preview_dataset(file_path: Union[str, Path], sample_size: int = 5) -> None:
     """Preview a few rows of the generated dataset."""
     try:
         file_path = Path(file_path)
+        if not file_path.exists():
+            logging.error(f"File not found: {file_path}")
+            return
+            
         with file_path.open('r', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
             rows = list(reader)
+            
+            if not rows:
+                logging.warning("Dataset is empty")
+                return
+                
             preview = random.sample(rows, min(sample_size, len(rows)))
-            logging.info(f"Preview of generated dataset:\n{preview}")
+            logging.info(f"\n=== Preview of generated dataset ({len(rows)} total) ===")
+            for i, row in enumerate(preview, 1):
+                label = "🚨 PHISHING" if row['label'] == '1' else "✓ LEGITIMATE"
+                logging.info(f"{i}. [{label}] {row['text'][:60]}...")
     except Exception as e:
-        logging.error(f"Error reading dataset for preview: {e}")
+        logging.error(f"✗ Error reading dataset for preview: {e}")
 
 if __name__ == "__main__":
     # Example phishing and non-phishing texts
     phishing_texts = [
         "Your account has been compromised. Click here: https://example.com/secure-account",
         "URGENT: Verify your account to avoid suspension: https://example.com/verify",
-        "Action required: Unusual activity detected. Secure your account: https://example.com/security-alert"
+        "Action required: Unusual activity detected. Secure your account: https://example.com/security-alert",
+        "Confirm payment: Your transaction needs verification. Click: https://example.com/payment-verify"
     ]
     non_phishing_texts = [
         "Thank you for your recent purchase!",
         "Your order has been confirmed.",
-        "Reminder: Appointment tomorrow at 10 AM."
+        "Reminder: Appointment tomorrow at 10 AM.",
+        "Welcome to our service!",
+        "Your subscription is now active."
     ]
 
     # Parameters
+    num_emails = 1000  # Total emails to generate
+    file_path = 'email_data.csv'  # Output file path in current directory
+
+    # Generate dataset
+    generate_email_dataset(num_emails, phishing_texts, non_phishing_texts, file_path, balance_dataset=True, overwrite=True)
+
+    # Preview the generated dataset
+    preview_dataset(file_path, sample_size=3)
     num_emails = 1000  # Total emails to generate
     file_path = '/home/bhanu/Desktop/email_data.csv'  # Output file path
 
