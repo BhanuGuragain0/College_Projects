@@ -1,0 +1,12 @@
+{
+  "certificates": [
+    {
+      "serial_number": "137625389166000723872720803588677786593707552518",
+      "common_name": "admin",
+      "type": "operator",
+      "issued_at": "2026-01-15T07:25:36.196183",
+      "expires_at": "2027-01-15T07:25:36",
+      "revoked": false
+    }
+  ]
+}

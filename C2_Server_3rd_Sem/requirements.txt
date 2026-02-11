@@ -1,0 +1,32 @@
+# Core Cryptography (CRITICAL - DO NOT REMOVE)
+cryptography>=42.0.0
+
+# Networking (CRITICAL - DO NOT REMOVE)
+aiohttp>=3.9.0
+
+# CLI and Output
+click>=8.1.0
+rich>=13.0.0
+python-dotenv>=1.0.0
+prompt-toolkit>=3.0.0
+
+# Data Handling
+msgpack>=1.0.0
+pydantic>=2.0.0
+
+# Testing (For pytest integration tests)
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0
+pytest-benchmark>=4.0.0
+
+# Code Quality & Linting
+black>=23.12.0
+flake8>=6.1.0
+mypy>=1.7.0
+bandit>=1.7.0
+
+# Documentation
+sphinx>=7.2.0
+sphinx-rtd-theme>=2.0.0

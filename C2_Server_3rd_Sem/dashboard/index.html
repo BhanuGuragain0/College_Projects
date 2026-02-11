@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>SecureComm Dashboard v3.0 - Production</title>
+    <meta name="description" content="Enterprise C2 Command & Control Dashboard with PKI Infrastructure">
+    <link rel="stylesheet" href="/static/main.css">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <span class="logo-icon">⚔️</span>
+                <span class="logo-text">SecureComm</span>
+            </div>
+
+            <nav class="nav-menu">
+                <ul>
+                    <li><a href="#dashboard" class="nav-link active" data-page="dashboard">
+                            <span class="nav-icon">📊</span>Dashboard
+                        </a></li>
+                    <li><a href="#agents" class="nav-link" data-page="agents">
+                            <span class="nav-icon">🤖</span>Agents
+                        </a></li>
+                    <li><a href="#commands" class="nav-link" data-page="commands">
+                            <span class="nav-icon">⚙️</span>Commands
+                        </a></li>
+                    <li><a href="#payload" class="nav-link" data-page="payload">
+                            <span class="nav-icon">🎯</span>Payload Builder
+                        </a></li>
+                    <li><a href="#files" class="nav-link" data-page="files">
+                            <span class="nav-icon">📁</span>Files
+                        </a></li>
+                    <li><a href="#certificates" class="nav-link" data-page="certificates">
+                            <span class="nav-icon">🔐</span>Certificates
+                        </a></li>
+                    <li><a href="#audit" class="nav-link" data-page="audit">
+                            <span class="nav-icon">📝</span>Audit Log
+                        </a></li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="connection-status">
+                    <span class="status-indicator connected"></span>
+                    <span class="status-text">Connected</span>
+                </div>
+                <div class="version">v3.0.0 - Production</div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <h1 id="page-title">Dashboard</h1>
+                <div class="top-bar-actions">
+                    <span class="last-refresh">Last refresh: <span id="last-refresh">Never</span></span>
+                    <button id="refresh-btn" class="btn btn-secondary btn-icon" title="Refresh">🔄</button>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="auto-refresh" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Auto-refresh</span>
+                </div>
+            </div>
+
+            <!-- Content Wrapper -->
+            <div class="content-wrapper">
+
+                <!-- ==================== DASHBOARD PAGE ==================== -->
+                <div id="page-dashboard" class="page active">
+                    <!-- Stats Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">🤖</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Total Agents</div>
+                                <div class="stat-value" id="stat-total-agents">0</div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Active Agents</div>
+                                <div class="stat-value" id="stat-active-agents">0</div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">⚙️</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Total Commands</div>
+                                <div class="stat-value" id="stat-total-commands">0</div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">⏳</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Pending</div>
+                                <div class="stat-value" id="stat-pending-commands">0</div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">✔️</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Successful</div>
+                                <div class="stat-value" id="stat-successful-commands">0</div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">❌</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Failed</div>
+                                <div class="stat-value" id="stat-failed-commands">0</div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">⏱️</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Uptime</div>
+                                <div class="stat-value" id="stat-uptime">0s</div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Success Rate</div>
+                                <div class="stat-value" id="stat-success-rate">100%</div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">💾</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Data Transferred</div>
+                                <div class="stat-value" id="stat-data-transferred">0 MB</div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">⚡</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Avg Response</div>
+                                <div class="stat-value" id="stat-avg-response-time">0 ms</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions Panel -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>🚀 Quick Actions</h3>
+                        </div>
+                        <div class="quick-actions">
+                            <button id="btn-new-command" class="btn btn-primary">
+                                <span>⚙️</span> New Command
+                            </button>
+                            <button id="btn-payload-builder" class="btn btn-info">
+                                <span>🔧</span> Payload Builder
+                            </button>
+                            <button id="btn-file-manager" class="btn btn-secondary">
+                                <span>📁</span> File Manager
+                            </button>
+                            <button id="btn-cert-viewer" class="btn btn-secondary">
+                                <span>🔐</span> Certificates
+                            </button>
+                            <button id="btn-batch-command" class="btn btn-warning" disabled>
+                                <span>📦</span> Batch Command
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>⚡ Recent Activity</h3>
+                            <a href="#commands" class="nav-link"
+                                style="color: var(--accent-primary); text-decoration: none;">View All →</a>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Agent</th>
+                                        <th>Command</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashboard-activity-tbody">
+                                    <tr>
+                                        <td colspan="4" class="empty-hint">
+                                            <div style="text-align: center; padding: 2rem;">
+                                                <div style="font-size: 3rem;">⚡</div>
+                                                <div>No recent activity</div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== AGENTS PAGE ==================== -->
+                <div id="page-agents" class="page">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>🤖 Connected Agents</h3>
+                            <div class="panel-actions">
+                                <input type="search" id="search-input" placeholder="🔍 Search agents..."
+                                    class="search-input">
+                                <select id="status-filter">
+                                    <option value="all">All Status</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px;">
+                                            <input type="checkbox" id="select-all-agents"
+                                                onchange="dashboard.handleSelectAll(this.checked)">
+                                        </th>
+                                        <th>Agent ID</th>
+                                        <th>IP Address</th>
+                                        <th>Status</th>
+                                        <th>Connected</th>
+                                        <th>Last Seen</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="agents-tbody">
+                                    <tr>
+                                        <td colspan="7" class="empty-hint">
+                                            <div style="text-align: center; padding: 2rem;">
+                                                <div style="font-size: 3rem;">🤖</div>
+                                                <div>No agents connected</div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Batch Actions Bar -->
+                    <div class="panel" id="batch-actions-panel" style="display: none;">
+                        <div class="panel-header">
+                            <h3>📦 Batch Actions</h3>
+                            <div>
+                                <span id="selected-count" style="color: var(--accent-primary); margin-right: 1rem;">0
+                                    agents selected</span>
+                                <button id="btn-batch-command-inline" class="btn btn-primary">Execute Batch
+                                    Command</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== COMMANDS PAGE ==================== -->
+                <div id="page-commands" class="page">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>⚙️ Command History</h3>
+                            <button id="btn-new-command-page" class="btn btn-primary">+ New Command</button>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Task ID</th>
+                                        <th>Agent ID</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Payload</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="commands-tbody">
+                                    <tr>
+                                        <td colspan="6" class="empty-hint">
+                                            <div style="text-align: center; padding: 2rem;">
+                                                <div style="font-size: 3rem;">⚙️</div>
+                                                <div>No commands executed</div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== PAYLOAD BUILDER PAGE ==================== -->
+                <div id="page-payload" class="page">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>🎯 Payload Builder</h3>
+                            <button class="btn btn-secondary" onclick="dashboard.loadPayloadTemplates()">
+                                🔄 Reload Templates
+                            </button>
+                        </div>
+                        <div style="padding: 2rem;">
+                            <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                                Build encrypted payloads with RSA-4096 + AES-256-GCM hybrid encryption.
+                                Select from pre-configured templates or create custom payloads.
+                            </p>
+                            <button class="btn btn-primary btn-lg" onclick="dashboard.openPayloadBuilder()">
+                                <span style="font-size: 1.5rem;">🔧</span> Open Payload Builder
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== FILES PAGE ==================== -->
+                <div id="page-files" class="page">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>📁 File Manager</h3>
+                            <button class="btn btn-primary" onclick="dashboard.openFileManager()">
+                                📂 Open File Manager
+                            </button>
+                        </div>
+                        <div style="padding: 2rem; text-align: center;">
+                            <div style="font-size: 4rem; margin-bottom: 1rem;">📁</div>
+                            <p style="color: var(--text-secondary);">
+                                Browse agent file systems, upload files, and download artifacts.
+                            </p>
+                            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 1rem;">
+                                Select an agent to view their files
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== CERTIFICATES PAGE ==================== -->
+                <div id="page-certificates" class="page">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>🔐 PKI Certificate Inspector</h3>
+                            <button class="btn btn-primary" onclick="dashboard.openCertificateViewer()">
+                                🔍 Inspect Certificates
+                            </button>
+                        </div>
+                        <div style="padding: 2rem; text-align: center;">
+                            <div style="font-size: 4rem; margin-bottom: 1rem;">🔐</div>
+                            <p style="color: var(--text-secondary);">
+                                View and inspect PKI certificates for CA, agents, and operators.
+                            </p>
+                            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 1rem;">
+                                Click "Inspect Certificates" to view the full PKI infrastructure
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== AUDIT LOG PAGE ==================== -->
+                <div id="page-audit" class="page">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>📝 Audit Trail</h3>
+                            <input type="search" id="audit-search" placeholder="🔍 Search audit log..."
+                                class="search-input">
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Event Type</th>
+                                        <th>Operator</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="audit-tbody">
+                                    <tr>
+                                        <td colspan="4" class="empty-hint">
+                                            <div style="text-align: center; padding: 2rem;">
+                                                <div style="font-size: 3rem;">📝</div>
+                                                <div>No audit entries</div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Command Modal -->
+    <div id="command-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚙️ New Command</h3>
+                <button class="modal-close" onclick="dashboard.closeCommandModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="command-form">
+                    <div class="form-group">
+                        <label for="cmd-agent">Select Agent</label>
+                        <select id="cmd-agent" required>
+                            <option value="">-- Select an agent --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cmd-type">Command Type</label>
+                        <select id="cmd-type" required>
+                            <option value="exec">Execute Command</option>
+                            <option value="shell">Shell Command</option>
+                            <option value="upload">Upload File</option>
+                            <option value="download">Download File</option>
+                            <option value="persist">Setup Persistence</option>
+                            <option value="status">Get Status</option>
+                            <option value="info">Get Info</option>
+                            <option value="sleep">Sleep Agent</option>
+                            <option value="exit">Exit Agent</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="cmd-payload-group">
+                        <label for="cmd-payload">Command Payload</label>
+                        <textarea id="cmd-payload" rows="4" placeholder="Enter command..."></textarea>
+                    </div>
+
+                    <div class="form-group" id="cmd-path-group" style="display: none;">
+                        <label for="cmd-path">File Path</label>
+                        <input type="text" id="cmd-path" placeholder="Enter file path...">
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="dashboard.closeCommandModal()">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            Execute Command
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Configuration -->
+    <script>
+        // Configuration
+        window.AUTO_REFRESH_INTERVAL = 5000; // 5 seconds
+
+        // Set dashboard token from URL parameter if present
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        if (token) {
+            window.DASHBOARD_TOKEN = token;
+            sessionStorage.setItem('securecomm_token', token);
+        }
+    </script>
+
+    <!-- Navigation Router -->
+    <script>
+        // Simple navigation router
+        function initNavigation() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const pages = document.querySelectorAll('.page');
+            const pageTitle = document.getElementById('page-title');
+
+            // Page titles mapping
+            const pageTitles = {
+                'dashboard': 'Dashboard',
+                'agents': 'Agents',
+                'commands': 'Commands',
+                'payload': 'Payload Builder',
+                'files': 'File Manager',
+                'certificates': 'PKI Certificates',
+                'audit': 'Audit Log'
+            };
+
+            // Navigate to page function
+            function navigateToPage(pageId) {
+                // Hide all pages
+                pages.forEach(page => page.classList.remove('active'));
+
+                // Show selected page
+                const targetPage = document.getElementById(`page-${pageId}`);
+                if (targetPage) {
+                    targetPage.classList.add('active');
+                }
+
+                // Update nav links
+                navLinks.forEach(link => link.classList.remove('active'));
+                const activeLink = document.querySelector(`.nav-link[data-page="${pageId}"]`);
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                }
+
+                // Update page title
+                if (pageTitle && pageTitles[pageId]) {
+                    pageTitle.textContent = pageTitles[pageId];
+                }
+
+                // Update URL hash
+                window.location.hash = pageId;
+            }
+
+            // Attach click handlers
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const pageId = link.getAttribute('data-page');
+                    if (pageId) {
+                        navigateToPage(pageId);
+                    }
+                });
+            });
+
+            // Handle initial load and browser back/forward
+            function handleHashChange() {
+                const hash = window.location.hash.substring(1) || 'dashboard';
+                navigateToPage(hash);
+            }
+
+            window.addEventListener('hashchange', handleHashChange);
+
+            // Navigate to initial page
+            handleHashChange();
+
+            console.log('✅ Navigation initialized');
+        }
+
+        // Initialize navigation when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🔥 SecureComm Dashboard v3.0 Initializing...');
+            initNavigation();
+
+            // Also bind secondary command buttons
+            const btnNewCommandPage = document.getElementById('btn-new-command-page');
+            if (btnNewCommandPage) {
+                btnNewCommandPage.addEventListener('click', () => {
+                    if (window.dashboard) {
+                        dashboard.openCommandModal();
+                    }
+                });
+            }
+
+            const btnBatchCommandInline = document.getElementById('btn-batch-command-inline');
+            if (btnBatchCommandInline) {
+                btnBatchCommandInline.addEventListener('click', () => {
+                    if (window.dashboard) {
+                        dashboard.executeBatchCommand();
+                    }
+                });
+            }
+        });
+    </script>
+
+    <!-- State Management -->
+    <script src="/static/state.js"></script>
+
+    <!-- Main Application -->
+    <script src="/static/app.js"></script>
+
+    <!-- Enhanced Styles -->
+    <style>
+        /* Page visibility control */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Quick actions grid */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .quick-actions .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            font-size: 1rem;
+        }
+
+        .quick-actions .btn span {
+            font-size: 1.5rem;
+        }
+
+        .btn-lg {
+            padding: 1.5rem 2rem;
+            font-size: 1.1rem;
+        }
+
+        /* Search input styling */
+        .search-input {
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            min-width: 250px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.1);
+        }
+
+        /* Panel actions */
+        .panel-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #status-filter {
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        /* Modal improvements */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-primary);
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--accent-primary);
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-primary);
+        }
+
+        /* Form styling */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            font-family: 'Fira Code', 'JetBrains Mono', monospace;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.1);
+        }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.15);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+        }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Panel styling */
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .panel-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: var(--text-primary);
+        }
+
+        /* Table styling */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            text-align: left;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-primary);
+            color: var(--text-primary);
+        }
+
+        .data-table tbody tr:hover {
+            background: var(--bg-hover);
+        }
+
+        .empty-hint {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        /* Toast container */
+        #toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 10000;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .panel-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .panel-actions {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .search-input {
+                width: 100%;
+                min-width: auto;
+            }
+        }
+    </style>
+</body>
+
+</html>
