@@ -1,0 +1,248 @@
+/* ============================================================================
+   MODERN UI ENHANCEMENTS - Chat Application
+   ============================================================================ */
+
+/* Notification Styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    z-index: 10000;
+    animation: slideIn 0.3s ease-out;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification-success {
+    background: linear-gradient(135deg, #00c853, #00e676);
+    color: white;
+    box-shadow: 0 4px 20px rgba(0, 200, 83, 0.3);
+}
+
+.notification-error {
+    background: linear-gradient(135deg, #d32f2f, #ff5252);
+    color: white;
+    box-shadow: 0 4px 20px rgba(211, 47, 47, 0.3);
+}
+
+.notification-info {
+    background: linear-gradient(135deg, #2196f3, #42a5f5);
+    color: white;
+    box-shadow: 0 4px 20px rgba(33, 150, 243, 0.3);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(400px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Loading Spinner */
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Smooth transitions for all interactive elements */
+button,
+input,
+textarea,
+a {
+    transition: all 0.3s ease;
+}
+
+/* Better form styling */
+form .field {
+    margin-bottom: 20px;
+}
+
+form .field input:focus,
+form .field textarea:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Enhanced chat styling */
+.chat-box {
+    scroll-behavior: smooth;
+}
+
+.chat {
+    display: flex;
+    margin: 10px 0;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chat.outgoing {
+    justify-content: flex-end;
+}
+
+.chat .details {
+    max-width: 70%;
+    word-wrap: break-word;
+    padding: 10px 15px;
+    border-radius: 10px;
+    background: #4eb8dd;
+    color: white;
+}
+
+.chat.incoming .details {
+    background: #3a4d5c;
+    color: #fff;
+}
+
+.chat .details .time {
+    font-size: 12px;
+    opacity: 0.8;
+    display: block;
+    margin-top: 5px;
+}
+
+/* User list enhancements */
+.users-list a {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.users-list a:hover {
+    background: rgba(78, 184, 221, 0.1);
+    border-left-color: #4eb8dd;
+    transform: translateX(5px);
+}
+
+/* Status indicator animation */
+.status-dot {
+    animation: pulse 2s infinite;
+}
+
+.status-dot.offline {
+    animation: none;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(78, 184, 221, 0.7);
+    }
+
+    50% {
+        box-shadow: 0 0 0 8px rgba(78, 184, 221, 0);
+    }
+}
+
+/* Mobile responsive improvements */
+@media (max-width: 600px) {
+    .chat .details {
+        max-width: 90%;
+    }
+
+    .notification {
+        right: 10px;
+        left: 10px;
+    }
+
+    .users-list {
+        max-height: 60vh;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #0a0e27;
+        color: #ffffff;
+    }
+
+    .wrapper {
+        background: #1a2540;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    input,
+    textarea {
+        background: #2a3a50;
+        color: #ffffff;
+        border-color: #3a4a60;
+    }
+}
+
+/* Smooth loading state */
+.users-list.loading::after {
+    content: '';
+    display: block;
+    height: 4px;
+    background: linear-gradient(90deg, #4eb8dd, transparent);
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Button hover effects */
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Input focus effects */
+input:focus {
+    outline: none;
+    border-color: #4eb8dd;
+    box-shadow: 0 0 0 3px rgba(78, 184, 221, 0.1);
+}
+
+/* Smooth page transitions */
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}

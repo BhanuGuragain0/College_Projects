@@ -1,0 +1,56 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs and database
+php/security.log
+php/db_errors.log
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# PHP
+php/images/*
+!php/images/.gitkeep
+
+# Node (if used)
+node_modules/
+npm-debug.log
+
+# Composer
+vendor/
+composer.lock
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# IDE
+.project
+.classpath
+.c9/
+
+# System files
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Backup files
+*.backup
+*.bak
+*.old
