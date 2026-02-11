@@ -1,19 +1,44 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gradientShift {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   text-decoration: none;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Inter', 'Poppins', sans-serif;
 }
 
-body, html {
+body,
+html {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden; /* Prevent scrolling */
+  overflow: hidden;
 }
 
 body {
@@ -21,10 +46,12 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: #091020;
-  padding: 0 10px;
-  color: #217093;
-  position: relative; /* Needed to position the particle container correctly */
+  background: linear-gradient(-45deg, #0f0f23, #1a1a3e, #16213e, #0f3460);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  padding: 20px;
+  color: #4eb8dd;
+  position: relative;
 }
 
 #particles-js {
@@ -33,119 +60,171 @@ body {
   height: 100%;
   top: 0;
   left: 0;
-  z-index: -1; /* Ensure particles stay in the background */
+  z-index: 0;
+  opacity: 0.3;
 }
 
 .wrapper {
-  background: #111d3a;
+  background: linear-gradient(135deg, rgba(17, 29, 58, 0.85), rgba(20, 35, 75, 0.85));
+  backdrop-filter: blur(20px);
   max-width: 450px;
   width: 100%;
-  border-radius: 16px;
-  position: relative; /* Ensure it appears above the particles */
-  z-index: 1; /* Make sure it overlays the particle background */
+  border-radius: 20px;
+  border: 1px solid rgba(78, 184, 221, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  position: relative;
+  z-index: 1;
+  animation: slideIn 0.6s ease-out;
 }
 
 .form {
-  padding: 25px 30px;
+  padding: 40px;
 }
 
 .form header {
-  font-size: 25px;
-  font-weight: 600;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #217093;
+  font-size: 28px;
+  font-weight: 700;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(78, 184, 221, 0.2);
+  color: #ffffff;
+  letter-spacing: -0.5px;
 }
 
 .form form {
-  margin: 20px 0;
+  margin: 24px 0;
 }
 
 .form form .error-text {
-  color: #721c24;
-  padding: 8px 10px;
+  color: #fff;
+  padding: 12px 16px;
   text-align: center;
-  border-radius: 5px;
-  background: #f8d7da;
-  border: 1px solid #f5c6cb;
-  margin-bottom: 10px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(220, 53, 69, 0.9), rgba(255, 107, 107, 0.9));
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  margin-bottom: 16px;
   display: none;
+  backdrop-filter: blur(10px);
+  animation: slideIn 0.3s ease-out;
 }
 
 .form form .name-details {
   display: flex;
+  gap: 12px;
+}
+
+.form .name-details .field {
+  flex: 1;
 }
 
 .form .name-details .field:first-child {
-  margin-right: 10px;
+  margin-right: 0;
 }
 
 .form .name-details .field:last-child {
-  margin-left: 10px;
+  margin-left: 0;
 }
 
 .form form .field {
   display: flex;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
   flex-direction: column;
   position: relative;
 }
 
 .form form .field label {
-  margin-bottom: 2px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #4eb8dd;
+  font-size: 14px;
+  letter-spacing: 0.5px;
 }
 
-.form form .input input {
-  height: 40px;
+.form form .input input,
+.form form .field input[type="email"],
+.form form .field input[type="text"],
+.form form .field input[type="file"],
+.form form .field input[type="password"] {
+  height: 44px;
   width: 100%;
-  font-size: 16px;
-  padding: 0 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-}
-
-.form form .field input {
+  font-size: 15px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(78, 184, 221, 0.3);
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
   outline: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
 }
 
-.form form .image input {
-  font-size: 17px;
+.form form .input input::placeholder,
+.form form .field input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 
-.form form .button input {
-  height: 45px;
-  border: none;
-  color: #fff;
-  font-size: 17px;
-  background: #4eb8dd;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-top: 13px;
+.form form .input input:focus,
+.form form .field input:focus {
+  border-color: #667eea;
+  background-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
 }
 
 .form form .field i {
   position: absolute;
-  right: 15px;
-  top: 70%;
+  right: 16px;
+  top: 50%;
   color: #4eb8dd;
   cursor: pointer;
   transform: translateY(-50%);
+  font-size: 18px;
+  transition: all 0.3s ease;
+}
+
+.form form .field i:hover {
+  color: #667eea;
 }
 
 .form form .field i.active::before {
-  color: #243a42;
+  color: #667eea;
   content: "\f070";
+}
+
+.form form .button input {
+  height: 50px;
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 16px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+  letter-spacing: 0.5px;
+}
+
+.form form .button input:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(102, 126, 234, 0.4);
 }
 
 .form .link {
   text-align: center;
-  margin: 10px 0;
-  font-size: 17px;
+  margin: 16px 0 0;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.3px;
 }
 
 .form .link a {
-  color: rgb(255, 255, 255);
+  color: #4facfe;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin: 0 4px;
 }
 
 .form .link a:hover {
+  color: #667eea;
   text-decoration: underline;
 }
