@@ -1,68 +1,88 @@
 <?php
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Sanitize inputs
-    $token = htmlspecialchars($_POST['token']);
-    $new_password = htmlspecialchars($_POST['new_password']);
+// ============================================================================
+// RESET PASSWORD - SECURITY HARDENED
+// ============================================================================
 
-    // Validate the token and update the password
-    $conn = new mysqli('localhost', 'username', 'password', 'database');
+include_once "config.php";
+include_once "security.php";
 
-    if ($conn->connect_error) {
-        die("Connection failed: " . $conn->connect_error);
-    }
-
-    $stmt = $conn->prepare("SELECT email FROM password_resets WHERE token = ? AND expires_at > NOW()");
-    $stmt->bind_param("s", $token);
-    $stmt->execute();
-    $stmt->store_result();
-
-    if ($stmt->num_rows > 0) {
-        $stmt->bind_result($email);
-        $stmt->fetch();
-
-        // Validate password strength (example: minimum 8 characters)
-        if (strlen($new_password) < 8) {
-            echo "Password must be at least 8 characters long.";
-            exit();
-        }
-
-        // Update the password (assuming you have a `users` table)
-        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-        $update_stmt = $conn->prepare("UPDATE users SET password = ? WHERE email = ?");
-        $update_stmt->bind_param("ss", $hashed_password, $email);
-
-        if ($update_stmt->execute()) {
-            // Delete the token after successful password reset
-            $delete_stmt = $conn->prepare("DELETE FROM password_resets WHERE token = ?");
-            $delete_stmt->bind_param("s", $token);
-            $delete_stmt->execute();
-            $delete_stmt->close();
-
-            echo "Password has been reset successfully.";
-        } else {
-            echo "Failed to reset password. Please try again.";
-        }
-
-        $update_stmt->close();
-    } else {
-        echo "Invalid or expired token.";
-    }
-
-    $stmt->close();
-    $conn->close();
-} else {
-    if (isset($_GET['token'])) {
-        $token = htmlspecialchars($_GET['token']);
-        ?>
-        <form method="POST" action="reset_password.php">
-            <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
-            <label for="new_password">New Password</label>
-            <input type="password" name="new_password" required>
-            <button type="submit">Reset Password</button>
-        </form>
-        <?php
-    } else {
-        echo "Invalid request.";
-    }
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    send_response('error', 'Invalid request method');
 }
+
+$token = validate_input($_POST['token'] ?? '');
+$new_password = $_POST['new_password'] ?? '';
+$password_confirm = $_POST['password_confirm'] ?? '';
+
+if (empty($token) || empty($new_password)) {
+    send_response('error', 'All fields are required');
+}
+
+if ($new_password !== $password_confirm) {
+    send_response('error', 'Passwords do not match');
+}
+
+$password_errors = validate_password($new_password);
+if (!empty($password_errors)) {
+    send_response('error', 'Password is too weak. ' . implode(', ', $password_errors));
+}
+
+$stmt = $conn->prepare("SELECT email, created_at FROM password_resets WHERE token = ?");
+if ($stmt === false) {
+    log_security_event('RESET_PASSWORD_ERROR', "Database prepare error: " . $conn->error, 'ERROR');
+    send_response('error', 'Database error occurred');
+}
+
+$stmt->bind_param("s", $token);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows === 0) {
+    log_security_event('RESET_PASSWORD_ATTEMPT', "Invalid reset token used: $token", 'WARNING');
+    send_response('error', 'Invalid or expired reset token');
+}
+
+$row = $result->fetch_assoc();
+$email = $row['email'];
+$created_at = $row['created_at'];
+
+// Check token expiry (1 hour)
+$expire_time = strtotime($created_at) + 3600;
+if (time() > $expire_time) {
+    log_security_event('RESET_PASSWORD_ATTEMPT', "Expired reset token used for: $email", 'WARNING');
+    send_response('error', 'Reset token has expired. Please request a new one');
+}
+
+$hashed_password = password_hash($new_password, PASSWORD_BCRYPT, ['cost' => 12]);
+
+$stmt2 = $conn->prepare("UPDATE users SET password = ? WHERE email = ?");
+if ($stmt2 === false) {
+    log_security_event('RESET_PASSWORD_ERROR', "Database prepare error: " . $conn->error, 'ERROR');
+    send_response('error', 'Database error occurred');
+}
+
+$stmt2->bind_param("ss", $hashed_password, $email);
+
+if ($stmt2->execute()) {
+    $stmt3 = $conn->prepare("DELETE FROM password_resets WHERE token = ?");
+    $stmt3->bind_param("s", $token);
+    $stmt3->execute();
+    $stmt3->close();
+    
+    log_security_event('RESET_PASSWORD_SUCCESS', "Password reset successful for: $email", 'INFO');
+    send_response('success', 'Password has been reset successfully. Please login with your new password');
+} else {
+    log_security_event('RESET_PASSWORD_ERROR', "Failed to update password for: $email", 'ERROR');
+    send_response('error', 'Failed to reset password. Please try again');
+}
+
+$stmt->close();
+$stmt2->close();
+$conn->close();
+?>
+
+$conn->close();
+?>
+
+$conn->close();
 ?>

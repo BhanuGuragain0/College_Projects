@@ -1,76 +1,64 @@
 <?php
-// Database credentials
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "chat_app";
+// ============================================================================
+// VALIDATE USER FOR PASSWORD RESET - SECURITY HARDENED
+// ============================================================================
 
-// Create connection
-$conn = new mysqli($servername, $username, $password, $dbname);
+session_start();
+include_once "config.php";
+include_once "security.php";
 
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    send_response('error', 'Invalid request method');
 }
 
-// Enable error reporting
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$fname = validate_input($_POST['name'] ?? '');
+$email = validate_input($_POST['email'] ?? '');
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $fname = htmlspecialchars($_POST['name']); // Assuming 'name' in the form corresponds to first name
-    $email = htmlspecialchars($_POST['email']);
+if (empty($fname) || empty($email)) {
+    send_response('error', 'All fields are required');
+}
 
-    // Prepare and execute the query to check user
-    $query = "SELECT email FROM users WHERE fname = ? AND email = ?";
-    $stmt = $conn->prepare($query);
+if (!validate_email($email)) {
+    send_response('error', 'Invalid email address');
+}
 
-    if (!$stmt) {
-        die("Prepare failed: " . $conn->error . " Query: " . $query);
+$stmt = $conn->prepare("SELECT user_id, unique_id, fname, email FROM users WHERE fname = ? AND email = ?");
+if ($stmt === false) {
+    log_security_event('VALIDATE_USER_ERROR', "Database prepare error: " . $conn->error, 'ERROR');
+    send_response('error', 'Database error occurred');
+}
+
+$stmt->bind_param("ss", $fname, $email);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows > 0) {
+    $row = $result->fetch_assoc();
+    $reset_token = bin2hex(random_bytes(32));
+    $expires_at = date("Y-m-d H:i:s", strtotime('+1 hour'));
+    
+    $stmt2 = $conn->prepare("INSERT INTO password_resets (email, token, created_at) VALUES (?, ?, ?)");
+    if ($stmt2 === false) {
+        log_security_event('VALIDATE_USER_ERROR', "Database prepare error: " . $conn->error, 'ERROR');
+        send_response('error', 'Failed to create reset token');
     }
-
-    $stmt->bind_param("ss", $fname, $email);
-    $stmt->execute();
-    $stmt->store_result();
-
-    if ($stmt->num_rows > 0) {
-        // Generate a unique reset token
-        $reset_token = bin2hex(random_bytes(32));
-        $reset_expiry = date("Y-m-d H:i:s", strtotime('+1 hour'));
-
-        // Prepare and execute the query to insert reset token
-        $query = "INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?)";
-        $stmt = $conn->prepare($query);
-
-        if (!$stmt) {
-            die("Prepare failed: " . $conn->error . " Query: " . $query);
-        }
-
-        $stmt->bind_param("sss", $email, $reset_token, $reset_expiry);
-        if (!$stmt->execute()) {
-            die("Execute failed: " . $stmt->error);
-        }
-
-        // Create the reset link
-        $reset_link = "http://yourdomain.com/reset-password.php?token=" . $reset_token;
-
-        // Send the reset link via email
-        $subject = "Password Reset Request";
-        $message = "Hello, click the link below to reset your password:\n\n$reset_link\n\nIf you did not request this, please ignore this email.";
-        $headers = "From: no-reply@yourdomain.com";
-
-        if (mail($email, $subject, $message, $headers)) {
-            echo "An email with a password reset link has been sent to your email address.";
-        } else {
-            echo "Failed to send the email. Please try again later.";
-        }
+    
+    $stmt2->bind_param("sss", $email, $reset_token, $expires_at);
+    
+    if ($stmt2->execute()) {
+        log_security_event('VALIDATE_USER_SUCCESS', "Password reset token created for: $email", 'INFO');
+        send_response('success', 'An email with a password reset link has been sent', ['token' => $reset_token]);
     } else {
-        echo "No user found with the provided first name and email.";
+        log_security_event('VALIDATE_USER_ERROR', "Failed to insert reset token: " . $stmt2->error, 'ERROR');
+        send_response('error', 'Failed to create reset token');
     }
-
-    $stmt->close();
-    $conn->close();
+    $stmt2->close();
 } else {
-    header('Location: ../forgot-password.html');
-    exit();
+    log_security_event('VALIDATE_USER_ATTEMPT', "Password reset attempt for non-existent user: $email", 'WARNING');
+    send_response('error', 'User not found. Please check your name and email');
 }
+
+$stmt->close();
+$conn->close();
 ?>
+
