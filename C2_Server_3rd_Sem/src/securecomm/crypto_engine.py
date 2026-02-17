@@ -10,8 +10,8 @@ import secrets
 from typing import Tuple, Optional
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives.asymmetric import x25519, ed25519
-from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import x25519, ed25519, rsa, padding
+from cryptography.hazmat.primitives import hashes, serialization, hmac
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.backends import default_backend
 
@@ -338,6 +338,157 @@ class CryptoEngine:
             password=password,
             backend=default_backend()
         )
+    
+    # ==================== SECURE UTILITIES ====================
+
+    def constant_time_compare(self, a: bytes, b: bytes) -> bool:
+        """
+        Securely compare two byte strings
+        
+        Args:
+            a: First byte string
+            b: Second byte string
+        
+        Returns:
+            True if equal, False otherwise
+        
+        Security:
+            - Prevents timing attacks
+            - Execution time depends on length, not content
+            - Uses secrets.compare_digest (Python 3.7+)
+        """
+        return secrets.compare_digest(a, b)
+
+    def derive_key(
+        self,
+        master_key: bytes,
+        salt: Optional[bytes] = None,
+        info: bytes = b"",
+        length: int = 32
+    ) -> bytes:
+        """
+        Generic key derivation using HKDF
+        
+        Args:
+            master_key: Input keying material
+            salt: Salt value (random recommended)
+            info: Context/application specific info
+            length: Desired output length (default 32)
+        
+        Returns:
+            Derived key bytes
+            
+        Security:
+            - HKDF-SHA256
+            - Standard KDF for key expansion/extraction
+        """
+        if salt is None:
+            # If salt is not provided, use a random salt? 
+            # Checklist says: "Salt is random (16+ bytes) or None (auto-generated)"
+            # RFC 5869 says salt is optional, if not provided it is set to a string of zeros.
+            # However, for new key generation it's often better to auto-generate if requested.
+            # But standard HKDF behavior with None is zeros.
+            # Let's follow strict HKDF spec but allow caller to pass None for zeros if they want,
+            # or we can generate random if they strictly imply "auto-generated random".
+            # Requirement: "Salt is random (16+ bytes) or None (auto-generated)"
+            # Interpretation: If None passed, we generate random salt?
+            # Or does it mean "can be None (which implies auto-generated zeros)"?
+            # Let's stick to standard behavior (zeros) for determinism unless explicit random requested.
+            # BUT wait, the checklist item says "Salt is random... OR None (auto-generated)". 
+            # Usually "auto-generated" implies random.
+            # Let's generate random salt if None is passed? 
+            # NO, that breaks determinism if the caller expects to derive the SAME key later without storing salt.
+            # HKDF with salt=None means salt=zeros.
+            # For "Session Key Derivation" we used a fixed salt.
+            # Let's use `os.urandom(16)` if salt is explicitly NOT provided?
+            # No, standard is salt=None -> zeros. Let's stick to that for `derive_key` to avoid confusion
+            # unless the specific usage requires random salt.
+            # The checklist might be referring to the `derive_session_key` where we used fixed salt.
+            salt = b'\x00' * 32
+            
+        hkdf = HKDF(
+            algorithm=hashes.SHA256(),
+            length=length,
+            salt=salt,
+            info=info,
+            backend=default_backend()
+        )
+        return hkdf.derive(master_key)
+
+    # ==================== RSA-4096-OAEP ENCRYPTION ====================
+
+    def generate_rsa_keypair(self, key_size: int = 4096) -> Tuple[rsa.RSAPrivateKey, rsa.RSAPublicKey]:
+        """
+        Generate RSA key pair
+        
+        Args:
+            key_size: Key size in bits (default 4096)
+        
+        Returns:
+            Tuple of (private_key, public_key)
+            
+        Security:
+            - 4096-bit key size (high security)
+            - Public exponent 65537
+        """
+        private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=key_size,
+            backend=default_backend()
+        )
+        public_key = private_key.public_key()
+        return private_key, public_key
+
+    def rsa_encrypt(self, plaintext: bytes, public_key: rsa.RSAPublicKey) -> bytes:
+        """
+        Encrypt data using RSA-OAEP
+        
+        Args:
+            plaintext: Data to encrypt
+            public_key: Valid RSA public key
+            
+        Returns:
+            Encrypted bytes
+            
+        Security:
+            - OAEP padding (PKCS#1 v2.0)
+            - SHA-256 for MGF1 and hashing
+            - Prevents padding oracle attacks
+        """
+        ciphertext = public_key.encrypt(
+            plaintext,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+        return ciphertext
+
+    def rsa_decrypt(self, ciphertext: bytes, private_key: rsa.RSAPrivateKey) -> bytes:
+        """
+        Decrypt data using RSA-OAEP
+        
+        Args:
+            ciphertext: Encrypted data
+            private_key: Valid RSA private key
+            
+        Returns:
+            Decrypted plaintext
+            
+        Security:
+            - OAEP padding verification
+            - Constant-time processing in underlying lib
+        """
+        plaintext = private_key.decrypt(
+            ciphertext,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+        return plaintext
     
     # ==================== UTILITY FUNCTIONS ====================
     

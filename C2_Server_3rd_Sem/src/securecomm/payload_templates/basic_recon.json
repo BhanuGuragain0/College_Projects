@@ -1,0 +1,42 @@
+{
+  "id": "basic_recon",
+  "name": "Basic Reconnaissance",
+  "description": "Gather system information, network config, and running processes",
+  "version": "1.0",
+  "author": "SecureComm C2",
+  "category": "reconnaissance",
+  "platform": "cross-platform",
+  "risk_level": "low",
+  "requires_admin": false,
+  "commands": [
+    {
+      "type": "exec",
+      "payload": "whoami",
+      "description": "Get current user identity",
+      "timeout": 30
+    },
+    {
+      "type": "exec",
+      "payload": "hostname",
+      "description": "Get system hostname",
+      "timeout": 30
+    },
+    {
+      "type": "exec",
+      "payload": "ipconfig /all",
+      "alt_payload": "ifconfig -a",
+      "description": "Get network configuration",
+      "timeout": 60
+    },
+    {
+      "type": "exec",
+      "payload": "tasklist",
+      "alt_payload": "ps aux",
+      "description": "List running processes",
+      "timeout": 60
+    }
+  ],
+  "tags": ["info-gathering", "basic", "safe"],
+  "created_at": "2026-02-11T12:00:00Z",
+  "updated_at": "2026-02-11T12:00:00Z"
+}

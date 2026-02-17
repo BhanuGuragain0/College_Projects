@@ -6,9 +6,9 @@ Author: Shadow Junior
 """
 
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Set
+from typing import Callable, Dict, Optional, Set
 import logging
 from threading import Lock
 
@@ -56,7 +56,7 @@ class Session:
             return True
         
         # Check time elapsed
-        elapsed = (datetime.utcnow() - self.created_at).total_seconds()
+        elapsed = (datetime.now(timezone.utc) - self.created_at).total_seconds()
         if elapsed >= time_threshold:
             return True
         
@@ -64,7 +64,7 @@ class Session:
     
     def update_activity(self):
         """Update last activity timestamp"""
-        self.last_activity = datetime.utcnow()
+        self.last_activity = datetime.now(timezone.utc)
     
     def increment_command_count(self):
         """Increment command counter"""
@@ -124,7 +124,7 @@ class SessionManager:
             Created session object
         """
         with self._lock:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             
             session = Session(
                 agent_id=agent_id,
@@ -191,7 +191,7 @@ class SessionManager:
             
             # Reset counters
             session.command_count = 0
-            session.created_at = datetime.utcnow()
+            session.created_at = datetime.now(timezone.utc)
             
             # Clear nonce history (new session)
             session.nonce_history.clear()
@@ -218,6 +218,46 @@ class SessionManager:
             return False
         
         return session.should_rotate(self.rotation_threshold, self.time_threshold)
+    
+    def update_session_atomic(self, agent_id: str, update_fn: Callable[[Session], any]) -> any:
+        """
+        Atomically update a session with a transaction-like function.
+        
+        Guarantees that the update function is applied while holding the lock,
+        preventing race conditions in multi-step operations.
+        
+        Args:
+            agent_id: Agent identifier
+            update_fn: Function that takes a Session and returns a result
+        
+        Returns:
+            Result from update_fn
+        
+        Raises:
+            ValueError: If session not found
+        
+        Security:
+            - Atomic multi-step updates
+            - No intermediate state exposure
+            - Thread-safe transaction semantics
+        
+        Example:
+            def update_activity(session):
+                session.update_activity()
+                session.increment_command_count()
+                return session.command_count
+            
+            count = session_mgr.update_session_atomic("agent_001", update_activity)
+        """
+        with self._lock:
+            session = self.sessions.get(agent_id)
+            if not session:
+                raise ValueError(f"Session not found for agent: {agent_id}")
+            
+            # Apply update atomically while holding lock
+            result = update_fn(session)
+            self.logger.debug(f"✅ Atomic session update for {agent_id}")
+            return result
     
     def record_command(self, agent_id: str, nonce: str) -> bool:
         """
@@ -297,7 +337,7 @@ class SessionManager:
             - Reduces attack surface
         """
         with self._lock:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             expired = []
             
             for agent_id, session in self.sessions.items():
@@ -326,7 +366,7 @@ class SessionManager:
         if not session:
             return None
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         age = (now - session.created_at).total_seconds()
         idle = (now - session.last_activity).total_seconds()
         
@@ -357,80 +397,4 @@ class SessionManager:
 
 # ==================== USAGE EXAMPLE ====================
 
-if __name__ == "__main__":
-    import secrets
-    
-    logging.basicConfig(level=logging.INFO)
-    
-    print("🔥 SecureComm Session Manager Test 🔥\n")
-    
-    # Initialize session manager
-    session_mgr = SessionManager(
-        rotation_threshold=5,      # Rotate after 5 commands (for testing)
-        time_threshold=10,         # Or after 10 seconds
-        session_timeout=60         # Timeout after 60 seconds
-    )
-    
-    print("1. Create Sessions")
-    print("-" * 50)
-    
-    # Create sessions for multiple agents
-    for i in range(3):
-        agent_id = f"agent_{i:03d}"
-        session_key = secrets.token_bytes(32)
-        ecdh_public = secrets.token_bytes(32)
-        
-        session_mgr.create_session(agent_id, session_key, ecdh_public)
-    
-    print(f"✅ Total sessions: {session_mgr.get_total_sessions()}\n")
-    
-    print("2. Send Commands (Replay Protection)")
-    print("-" * 50)
-    
-    agent_id = "agent_000"
-    
-    # Send valid commands
-    for i in range(3):
-        nonce = secrets.token_hex(32)
-        result = session_mgr.record_command(agent_id, nonce)
-        print(f"  Command {i+1}: {result}")
-    
-    # Try replay attack
-    print("\n⚠️  Attempting replay attack...")
-    replay_nonce = secrets.token_hex(32)
-    session_mgr.record_command(agent_id, replay_nonce)
-    replay_result = session_mgr.record_command(agent_id, replay_nonce)  # Replay
-    print(f"  Replay blocked: {not replay_result}\n")
-    
-    print("3. Session Statistics")
-    print("-" * 50)
-    
-    stats = session_mgr.get_session_stats(agent_id)
-    for key, value in stats.items():
-        print(f"  {key}: {value}")
-    
-    print("\n4. Key Rotation Test")
-    print("-" * 50)
-    
-    # Send more commands to trigger rotation
-    for i in range(5):
-        nonce = secrets.token_hex(32)
-        session_mgr.record_command(agent_id, nonce)
-    
-    needs_rotation = session_mgr.check_and_rotate(agent_id)
-    print(f"  Needs rotation: {needs_rotation}")
-    
-    if needs_rotation:
-        new_key = secrets.token_bytes(32)
-        new_public = secrets.token_bytes(32)
-        session_mgr.update_session_key(agent_id, new_key, new_public)
-        print(f"  ✅ Key rotated successfully")
-    
-    print("\n5. Session Cleanup")
-    print("-" * 50)
-    
-    print(f"  Before cleanup: {session_mgr.get_total_sessions()} sessions")
-    session_mgr.cleanup_expired_sessions()
-    print(f"  After cleanup: {session_mgr.get_total_sessions()} sessions")
-    
-    print("\n🔥 Session Manager test completed! 🔥")
+

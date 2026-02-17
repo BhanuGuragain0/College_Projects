@@ -9,7 +9,7 @@ import os
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Optional, Tuple, List, Dict
+from typing import Optional, Tuple, List, Dict, Any
 
 from cryptography import x509
 from cryptography.x509.oid import NameOID, ExtensionOID
@@ -174,13 +174,13 @@ class PKIManager:
         except Exception as exc:
             raise ValueError(f"CRL signature validation failed: {exc}")
         now = datetime.now(timezone.utc)
-        last_update = crl.last_update
-        if last_update.tzinfo is None:
-            last_update = last_update.replace(tzinfo=timezone.utc)
-        next_update = crl.next_update
+        last_update = crl.last_update_utc
+        # if last_update.tzinfo is None:  # _utc property is already aware
+        #     last_update = last_update.replace(tzinfo=timezone.utc)
+        next_update = crl.next_update_utc
         if next_update:
-            if next_update.tzinfo is None:
-                next_update = next_update.replace(tzinfo=timezone.utc)
+            # if next_update.tzinfo is None:
+            #     next_update = next_update.replace(tzinfo=timezone.utc)
             if now > next_update:
                 raise ValueError("CRL has expired")
         if now < last_update:
@@ -500,6 +500,92 @@ class PKIManager:
             raise ValueError(f"Certificate issuer does not match CA")
         
         return True
+    
+    def validate_certificate_unified(
+        self,
+        cert: x509.Certificate,
+        ca_cert: x509.Certificate,
+        expected_cn: Optional[str] = None,
+        expected_type: Optional[str] = None,
+        require_db_registration: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Unified comprehensive certificate validation with context.
+        
+        Performs all security checks and returns detailed validation result.
+        Replaces scattered validation implementations across codebase.
+        
+        Args:
+            cert: Certificate to validate
+            ca_cert: CA certificate
+            expected_cn: Expected Common Name (e.g., "operator_name")
+            expected_type: Expected cert type ("operator" or "agent")
+            require_db_registration: Enforce certificate must be in PKI database
+        
+        Returns:
+            {
+                "valid": True,
+                "cn": "certificate_cn",
+                "cert_type": "operator",
+                "serial": "hex_serial",
+                "expires_at": datetime,
+                "issued_by": "CA name"
+            }
+        
+        Raises:
+            ValueError: With detailed context on any validation failure
+        """
+        result = {
+            "valid": False,
+            "cn": None,
+            "cert_type": None,
+            "serial": hex(cert.serial_number),
+            "expires_at": cert.not_valid_after_utc.isoformat(),
+            "issued_by": str(ca_cert.subject)
+        }
+        
+        try:
+            # 1. Perform core validation (expiry, signature, issuer, revocation)
+            self.validate_certificate(cert, ca_cert)
+            
+            # 2. Extract Common Name
+            cn_attrs = cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+            if not cn_attrs:
+                raise ValueError("Certificate missing Common Name (CN)")
+            cn = cn_attrs[0].value
+            result["cn"] = cn
+            
+            # 3. Validate CN matches expected (if provided)
+            if expected_cn and cn != expected_cn:
+                raise ValueError(f"Certificate CN '{cn}' does not match expected '{expected_cn}'")
+            
+            # 4. Check certificate type in database (if provided)
+            serial_str = str(cert.serial_number)
+            cert_info = self.get_certificate_info(serial_str)
+            
+            if require_db_registration and not cert_info:
+                raise ValueError(f"Certificate {serial_str} not registered in PKI database")
+            
+            if cert_info:
+                cert_type = cert_info.get("type", "unknown")
+                result["cert_type"] = cert_type
+                
+                # 5. Validate certificate type matches expected (if provided)
+                if expected_type and cert_type != expected_type:
+                    raise ValueError(f"Certificate type '{cert_type}' does not match expected '{expected_type}'")
+            else:
+                # Certificate not in database but not required - type unknown
+                result["cert_type"] = "unregistered"
+            
+            # Mark as valid
+            result["valid"] = True
+            return result
+            
+        except ValueError:
+            # Re-raise validation errors with context
+            raise
+        except Exception as e:
+            raise ValueError(f"Certificate validation error: {e}")
     
     def revoke_certificate(self, serial_number: str, reason: str = "unspecified"):
         """

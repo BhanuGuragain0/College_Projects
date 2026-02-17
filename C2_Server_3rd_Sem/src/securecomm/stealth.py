@@ -55,7 +55,8 @@ class StealthManager:
         """Windows specific debugger checks"""
         try:
             return ctypes.windll.kernel32.IsDebuggerPresent() != 0
-        except:
+        except (AttributeError, OSError) as e:
+            self.logger.debug(f"Windows debugger check failed: {e}")
             return False
 
     def _check_linux_debug(self) -> bool:
@@ -70,5 +71,6 @@ class StealthManager:
                         if pid > 0:
                             return True
             return False
-        except:
+        except (FileNotFoundError, ValueError, OSError) as e:
+            self.logger.debug(f"Linux debugger check failed: {e}")
             return False

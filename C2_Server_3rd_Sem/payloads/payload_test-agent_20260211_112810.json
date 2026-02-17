@@ -1,0 +1,9 @@
+{
+  "version": "3.0",
+  "algorithm": "RSA-OAEP + AES-256-GCM",
+  "encrypted_key": "zqhflpU1aoqtCnscUYmNlVWFAXxXEZy8Xzh25Xx7PyD1hidTyhI+1nOqpQ8kPqswLOlyVxw1gBvqqT9N5kYbqmkkyRrNwpEFt6ycsy3fH9yJn7th4EggdfCFd7Zxv6Iuf9azdYhIG3pl7jPu4NKI6wincqVcmihSJeovlzoXdKSxFSD+1tc8pg/IlLDdMU2SZ6CUEY0hA6BuLIT37IkM5s99c5RVI+H3XfccZpUE8ljK43s6yqPcbZiceMmquUwyBz7dn6OPftuQF2ZOPjMEE4rY7HDGK9b+T93mzNXj7IN7WxcdCF2Bf3ZkYYkIFq83+3Z8QyvTAd3FsUOVZ4JD4Q==",
+  "iv": "j1dQfuuMY+yTmBe8m293gw==",
+  "ciphertext": "cOxC7yH6iGBY0ve0Gm/6YSQLbaDvC28Q/rN/hwxFeZ9g/w==",
+  "auth_tag": "vdcj9GrmihRTjqH36pBCjw==",
+  "timestamp": "2026-02-11T11:28:10.244754+00:00"
+}

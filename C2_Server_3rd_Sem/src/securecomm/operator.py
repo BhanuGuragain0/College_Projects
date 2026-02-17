@@ -162,12 +162,16 @@ Type 'quit' to exit
 
     def _init_auth_gateway(self) -> AuthGateway:
         ca_certificate = self._load_ca_certificate()
+        
+        # Create validator that uses unified certificate validation
+        def validate_operator_cert(cert: x509.Certificate) -> None:
+            # Validation will be called with operator_id in auth_gateway.authenticate()
+            # For now, just ensure the certificate is valid at minimum
+            self.pki_manager.validate_certificate(cert, ca_certificate)
+        
         return AuthGateway(
             ca_certificate=ca_certificate,
-            certificate_validator=lambda cert: self.pki_manager.validate_certificate(
-                cert,
-                ca_certificate,
-            ),
+            certificate_validator=validate_operator_cert,
             audit_logger=self.audit,
         )
 
@@ -417,18 +421,341 @@ Type 'quit' to exit
             rprint(f"[red]{result.get('result')}[/red]")
 
     
-    def do_rotate(self, arg):
-        """Rotate session key for selected agent"""
+    def do_status(self, arg):
+        """Show detailed status of selected agent: status"""
+        if not self.selected_agent:
+            rprint("[red]No agent selected. Use 'select <agent_id>' first[/red]")
+            return
+        
+        self._sync_agents()
+        agent_info = self.agents.get(self.selected_agent)
+        if not agent_info:
+            rprint(f"[red]Agent {self.selected_agent} not found[/red]")
+            return
+        
+        # Get session info if available
+        session = self.sessions.get_session(self.selected_agent)
+        
+        table = Table(title=f"Agent Status: {self.selected_agent}")
+        table.add_column("Property", style="cyan")
+        table.add_column("Value", style="green")
+        
+        table.add_row("Agent ID", self.selected_agent)
+        table.add_row("IP Address", agent_info.get('ip', 'Unknown'))
+        table.add_row("Status", agent_info.get('status', 'Unknown'))
+        table.add_row("Last Seen", agent_info.get('last_seen', 'Never'))
+        
+        if session:
+            table.add_row("Session Active", "Yes")
+            table.add_row("Session Key", f"{session.session_key[:16]}..." if hasattr(session, 'session_key') else "N/A")
+        else:
+            table.add_row("Session Active", "No")
+        
+        # Get recent commands count
+        commands = [c for c in self.operational_db.list_commands() if c.agent_id == self.selected_agent]
+        table.add_row("Total Commands", str(len(commands)))
+        table.add_row("Pending Commands", str(sum(1 for c in commands if c.status == 'pending')))
+        
+        self.console.print(table)
+    
+    def do_info(self, arg):
+        """Get detailed system info from agent: info"""
         if not self.selected_agent:
             rprint("[red]No agent selected[/red]")
             return
         
-        rprint("[yellow]Rotating session key...[/yellow]")
         try:
-            self.server.request_key_rotation(self.selected_agent, auth_token=self.auth_token)
-            rprint("[green]Session key rotation requested[/green]")
+            task_id = self.server.send_command(
+                agent_id=self.selected_agent,
+                cmd_type="exec",
+                payload="systeminfo" if os.name == 'nt' else "uname -a && whoami && pwd",
+                auth_token=self.auth_token,
+            )
         except Exception as exc:
-            rprint(f"[red]Rotation failed: {exc}[/red]")
+            rprint(f"[red]Command failed: {exc}[/red]")
+            return
+
+        result = self._wait_for_response(task_id)
+        if result is None:
+            rprint("[red]No response received[/red]")
+            return
+
+        self.audit.log_command(self.selected_agent, "info", "system_info")
+        rprint(f"[green]System Information:[/green]\n{result.get('result')}")
+    
+    def do_shell(self, arg):
+        """Enter interactive shell mode with agent: shell"""
+        if not self.selected_agent:
+            rprint("[red]No agent selected[/red]")
+            return
+        
+        rprint(f"[yellow]Entering interactive shell with {self.selected_agent}...[/yellow]")
+        rprint("[yellow]Type 'exit' to return to operator console[/yellow]\n")
+        
+        while True:
+            try:
+                command = input(f"{self.selected_agent}$ ")
+                if command.strip().lower() in ('exit', 'quit', 'logout'):
+                    break
+                
+                if not command.strip():
+                    continue
+                
+                task_id = self.server.send_command(
+                    agent_id=self.selected_agent,
+                    cmd_type="exec",
+                    payload=command,
+                    auth_token=self.auth_token,
+                )
+                
+                result = self._wait_for_response(task_id, timeout=30)
+                if result:
+                    print(result.get('result', ''))
+                else:
+                    rprint("[red]No response[/red]")
+                    
+            except KeyboardInterrupt:
+                print("\n")
+                break
+            except Exception as exc:
+                rprint(f"[red]Error: {exc}[/red]")
+        
+        rprint("[green]Shell session ended[/green]")
+    
+    def do_batch(self, args):
+        """Send command to multiple agents: batch <agent1,agent2> <command>"""
+        if not args:
+            rprint("[red]Usage: batch <agent1,agent2,...> <command>[/red]")
+            return
+        
+        parts = args.split(' ', 1)
+        if len(parts) < 2:
+            rprint("[red]Usage: batch <agent1,agent2,...> <command>[/red]")
+            return
+        
+        agent_ids = [a.strip() for a in parts[0].split(',')]
+        command = parts[1]
+        
+        self._sync_agents()
+        
+        table = Table(title=f"Batch Command: {command}")
+        table.add_column("Agent", style="cyan")
+        table.add_column("Status", style="green")
+        table.add_column("Result", style="yellow")
+        
+        for agent_id in agent_ids:
+            if agent_id not in self.agents:
+                table.add_row(agent_id, "[red]Not Found[/red]", "-")
+                continue
+            
+            try:
+                task_id = self.server.send_command(
+                    agent_id=agent_id,
+                    cmd_type="exec",
+                    payload=command,
+                    auth_token=self.auth_token,
+                )
+                
+                result = self._wait_for_response(task_id, timeout=10)
+                if result:
+                    output = result.get('result', '')[:50] + "..." if len(str(result.get('result', ''))) > 50 else result.get('result', '')
+                    table.add_row(agent_id, "[green]Success[/green]", output)
+                else:
+                    table.add_row(agent_id, "[yellow]No Response[/yellow]", "-")
+            except Exception as exc:
+                table.add_row(agent_id, "[red]Failed[/red]", str(exc)[:30])
+        
+        self.console.print(table)
+        self.audit.log_security_event("batch_command", {"agents": agent_ids, "command": command})
+    
+    def do_scan(self, arg):
+        """Network scan from agent: scan <target>"""
+        if not self.selected_agent:
+            rprint("[red]No agent selected[/red]")
+            return
+        
+        target = arg.strip() if arg else "localhost"
+        
+        # Determine scan command based on OS
+        if os.name == 'nt':
+            scan_cmd = f"ping -n 4 {target}"
+        else:
+            scan_cmd = f"ping -c 4 {target}"
+        
+        try:
+            task_id = self.server.send_command(
+                agent_id=self.selected_agent,
+                cmd_type="scan",
+                payload=scan_cmd,
+                auth_token=self.auth_token,
+            )
+        except Exception as exc:
+            rprint(f"[red]Scan failed: {exc}[/red]")
+            return
+
+        result = self._wait_for_response(task_id, timeout=30)
+        if result is None:
+            rprint("[red]No response received[/red]")
+            return
+
+        rprint(f"[green]Scan Results:[/green]\n{result.get('result')}")
+    
+    def do_sleep(self, arg):
+        """Set agent beacon interval: sleep <seconds>"""
+        if not self.selected_agent:
+            rprint("[red]No agent selected[/red]")
+            return
+        
+        try:
+            seconds = int(arg.strip()) if arg else 60
+        except ValueError:
+            rprint("[red]Invalid sleep duration. Usage: sleep <seconds>[/red]")
+            return
+        
+        try:
+            task_id = self.server.send_command(
+                agent_id=self.selected_agent,
+                cmd_type="sleep",
+                payload=str(seconds),
+                auth_token=self.auth_token,
+            )
+        except Exception as exc:
+            rprint(f"[red]Command failed: {exc}[/red]")
+            return
+
+        result = self._wait_for_response(task_id)
+        if result and result.get("status") == "success":
+            rprint(f"[green]Agent will now beacon every {seconds} seconds[/green]")
+        else:
+            rprint("[red]Failed to set sleep interval[/red]")
+    
+    def do_kill(self, arg):
+        """Terminate agent: kill <agent_id> (or selected if no arg)"""
+        agent_id = arg.strip() if arg else self.selected_agent
+        
+        if not agent_id:
+            rprint("[red]No agent specified or selected[/red]")
+            return
+        
+        rprint(f"[yellow]Sending kill command to {agent_id}...[/yellow]")
+        
+        try:
+            task_id = self.server.send_command(
+                agent_id=agent_id,
+                cmd_type="exit",
+                payload="terminate",
+                auth_token=self.auth_token,
+            )
+        except Exception as exc:
+            rprint(f"[red]Kill command failed: {exc}[/red]")
+            return
+
+        result = self._wait_for_response(task_id, timeout=10)
+        if result and result.get("status") == "success":
+            rprint(f"[green]Agent {agent_id} terminated successfully[/green]")
+            if agent_id == self.selected_agent:
+                self.selected_agent = None
+                self.prompt = "operator@securecomm> "
+        else:
+            rprint(f"[yellow]Kill command sent but no confirmation received[/yellow]")
+    
+    def do_cert(self, arg):
+        """Certificate operations: cert [list|show <agent_id>]"""
+        if not arg or arg.strip() == "list":
+            # List all certificates
+            table = Table(title="Certificates")
+            table.add_column("Type", style="cyan")
+            table.add_column("Name", style="green")
+            table.add_column("Valid Until", style="yellow")
+            
+            # Get CA cert
+            ca_cert_path = Path(self.ca_cert_path)
+            if ca_cert_path.exists():
+                try:
+                    ca_cert = x509.load_pem_x509_certificate(ca_cert_path.read_bytes(), default_backend())
+                    table.add_row("CA", "Root CA", str(ca_cert.not_valid_after_utc.date()))
+                except Exception:
+                    pass
+            
+            # Get operator certs
+            operators_dir = self.pki_manager.pki_path / "operators"
+            if operators_dir.exists():
+                for cert_file in operators_dir.glob("*.crt"):
+                    try:
+                        cert = x509.load_pem_x509_certificate(cert_file.read_bytes(), default_backend())
+                        table.add_row("Operator", cert_file.stem, str(cert.not_valid_after_utc.date()))
+                    except Exception:
+                        pass
+            
+            # Get agent certs
+            agents_dir = self.pki_manager.pki_path / "agents"
+            if agents_dir.exists():
+                for agent_folder in agents_dir.iterdir():
+                    if agent_folder.is_dir():
+                        cert_file = agent_folder / f"{agent_folder.name}.crt"
+                        if cert_file.exists():
+                            try:
+                                cert = x509.load_pem_x509_certificate(cert_file.read_bytes(), default_backend())
+                                table.add_row("Agent", agent_folder.name, str(cert.not_valid_after_utc.date()))
+                            except Exception:
+                                pass
+            
+            self.console.print(table)
+        else:
+            # Show specific cert
+            agent_id = arg.strip()
+            cert_path = self.pki_manager.pki_path / "agents" / agent_id / f"{agent_id}.crt"
+            if cert_path.exists():
+                try:
+                    cert = x509.load_pem_x509_certificate(cert_path.read_bytes(), default_backend())
+                    table = Table(title=f"Certificate: {agent_id}")
+                    table.add_column("Property", style="cyan")
+                    table.add_column("Value", style="green")
+                    table.add_row("Subject", str(cert.subject))
+                    table.add_row("Issuer", str(cert.issuer))
+                    table.add_row("Serial", hex(cert.serial_number))
+                    table.add_row("Valid From", str(cert.not_valid_before_utc))
+                    table.add_row("Valid Until", str(cert.not_valid_after_utc))
+                    self.console.print(table)
+                except Exception as exc:
+                    rprint(f"[red]Error reading certificate: {exc}[/red]")
+            else:
+                rprint(f"[red]Certificate not found for {agent_id}[/red]")
+    
+    def do_audit(self, arg):
+        """View audit logs: audit [recent|agent <agent_id>]"""
+        if not arg or arg.strip() == "recent":
+            # Show recent audit events
+            logs = self.audit.search_events(limit=20)
+            table = Table(title="Recent Audit Events")
+            table.add_column("Time", style="cyan")
+            table.add_column("Event", style="green")
+            table.add_column("Agent/Operator", style="yellow")
+            
+            for log in logs[-20:]:
+                table.add_row(
+                    log.get('timestamp', 'N/A')[:19],
+                    log.get('event_type', 'Unknown'),
+                    log.get('agent_id') or log.get('operator_id', 'N/A')
+                )
+            
+            self.console.print(table)
+        elif arg.strip().startswith("agent "):
+            agent_id = arg.strip()[6:]
+            logs = self.audit.search_events(agent_id=agent_id, limit=20)
+            table = Table(title=f"Audit Events for {agent_id}")
+            table.add_column("Time", style="cyan")
+            table.add_column("Event", style="green")
+            
+            for log in logs:
+                table.add_row(
+                    log.get('timestamp', 'N/A')[:19],
+                    log.get('event_type', 'Unknown')
+                )
+            
+            self.console.print(table)
+        else:
+            rprint("[red]Usage: audit [recent|agent <agent_id>][/red]")
     
     def do_quit(self, arg):
         """Exit operator console"""
@@ -471,7 +798,7 @@ Type 'quit' to exit
 
         return self._wait_for_response(task_id)
 
-    def _wait_for_response(self, task_id: str, timeout: int = 15, poll_interval: float = 0.25) -> Optional[dict]:
+    def _wait_for_response(seilf, task_id: str, timeout: int = 15, poll_interval: float = 0.25) -> Optional[dict]:
         deadline = time.time() + timeout
         while time.time() < deadline:
             record = self.operational_db.get_command(task_id)

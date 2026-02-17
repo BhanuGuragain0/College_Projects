@@ -7,7 +7,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>SecureComm Dashboard v3.0 - Production</title>
     <meta name="description" content="Enterprise C2 Command & Control Dashboard with PKI Infrastructure">
-    <link rel="stylesheet" href="/static/main.css">
+    <link rel="stylesheet" href="/static/main.css?v=3.6">
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 </head>
 
@@ -34,6 +34,9 @@
                     <li><a href="#payload" class="nav-link" data-page="payload">
                             <span class="nav-icon">🎯</span>Payload Builder
                         </a></li>
+                    <li><a href="#agent-builder" class="nav-link" data-page="agent-builder" onclick="dashboard.openAgentBuilder(); return false;">
+                            <span class="nav-icon">🔨</span>Agent Builder
+                        </a></li>
                     <li><a href="#files" class="nav-link" data-page="files">
                             <span class="nav-icon">📁</span>Files
                         </a></li>
@@ -42,6 +45,12 @@
                         </a></li>
                     <li><a href="#audit" class="nav-link" data-page="audit">
                             <span class="nav-icon">📝</span>Audit Log
+                        </a></li>
+                    <li><a href="#health" class="nav-link" data-page="health">
+                            <span class="nav-icon">🏥</span>Health
+                        </a></li>
+                    <li><a href="#metrics" class="nav-link" data-page="metrics">
+                            <span class="nav-icon">📈</span>Metrics
                         </a></li>
                 </ul>
             </nav>
@@ -376,9 +385,64 @@
                     <div class="panel">
                         <div class="panel-header">
                             <h3>📝 Audit Trail</h3>
-                            <input type="search" id="audit-search" placeholder="🔍 Search audit log..."
-                                class="search-input">
+                            <div class="panel-actions">
+                                <button class="btn btn-secondary" onclick="dashboard.openAuditSearch()">
+                                    🔍 Advanced Search
+                                </button>
+                                <button class="btn btn-secondary" onclick="dashboard.exportAuditLogs()">
+                                    📥 Export
+                                </button>
+                                <button class="btn btn-secondary" onclick="dashboard.refreshAuditLogs()">
+                                    🔄 Refresh
+                                </button>
+                            </div>
                         </div>
+
+                        <!-- Advanced Search Panel (Hidden by default) -->
+                        <div id="audit-search-panel" class="panel" style="display: none;">
+                            <div class="panel-header">
+                                <h4>🔍 Advanced Search</h4>
+                                <button class="btn btn-sm btn-secondary"
+                                    onclick="dashboard.toggleAuditSearch()">×</button>
+                            </div>
+                            <div style="padding: 1rem;">
+                                <div
+                                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                                    <div class="form-group">
+                                        <label for="audit-start-time">Start Time</label>
+                                        <input type="datetime-local" id="audit-start-time" class="form-control">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="audit-end-time">End Time</label>
+                                        <input type="datetime-local" id="audit-end-time" class="form-control">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="audit-event-type">Event Type</label>
+                                        <select id="audit-event-type" class="form-control">
+                                            <option value="">All Types</option>
+                                            <option value="login">Login</option>
+                                            <option value="command">Command</option>
+                                            <option value="agent">Agent</option>
+                                            <option value="file">File</option>
+                                            <option value="certificate">Certificate</option>
+                                            <option value="system">System</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="audit-operator">Operator</label>
+                                        <input type="text" id="audit-operator" placeholder="Operator name..."
+                                            class="form-control">
+                                    </div>
+                                </div>
+                                <div style="margin-top: 1rem;">
+                                    <button class="btn btn-primary"
+                                        onclick="dashboard.executeAuditSearch()">Search</button>
+                                    <button class="btn btn-secondary"
+                                        onclick="dashboard.clearAuditSearch()">Clear</button>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="table-container">
                             <table class="data-table">
                                 <thead>
@@ -387,11 +451,12 @@
                                         <th>Event Type</th>
                                         <th>Operator</th>
                                         <th>Details</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="audit-tbody">
                                     <tr>
-                                        <td colspan="4" class="empty-hint">
+                                        <td colspan="5" class="empty-hint">
                                             <div style="text-align: center; padding: 2rem;">
                                                 <div style="font-size: 3rem;">📝</div>
                                                 <div>No audit entries</div>
@@ -400,6 +465,52 @@
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== HEALTH MONITORING PAGE ==================== -->
+                <div id="page-health" class="page">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>🏥 System Health</h3>
+                            <div class="panel-actions">
+                                <button class="btn btn-secondary" onclick="dashboard.refreshHealth()">
+                                    🔄 Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div id="health-content" style="padding: 2rem;">
+                            <div style="text-align: center; padding: 2rem;">
+                                <div style="font-size: 4rem;">🏥</div>
+                                <p style="color: var(--text-secondary);">Loading system health information...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== METRICS PAGE ==================== -->
+                <div id="page-metrics" class="page">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>📊 System Metrics</h3>
+                            <div class="panel-actions">
+                                <select id="metrics-category" onchange="dashboard.loadMetricsUI(this.value)">
+                                    <option value="">All Metrics</option>
+                                    <option value="operation">Operations</option>
+                                    <option value="errors">Errors</option>
+                                    <option value="performance">Performance</option>
+                                </select>
+                                <button class="btn btn-secondary" onclick="dashboard.refreshMetrics()">
+                                    🔄 Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div id="metrics-content" style="padding: 2rem;">
+                            <div style="text-align: center; padding: 2rem;">
+                                <div style="font-size: 4rem;">📊</div>
+                                <p style="color: var(--text-secondary);">Loading system metrics...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -495,7 +606,9 @@
                 'payload': 'Payload Builder',
                 'files': 'File Manager',
                 'certificates': 'PKI Certificates',
-                'audit': 'Audit Log'
+                'audit': 'Audit Log',
+                'health': 'System Health',
+                'metrics': 'System Metrics'
             };
 
             // Navigate to page function
@@ -519,6 +632,27 @@
                 // Update page title
                 if (pageTitle && pageTitles[pageId]) {
                     pageTitle.textContent = pageTitles[pageId];
+                }
+
+                // Load page-specific data with safety checks
+                if (window.dashboard && typeof dashboard.loadHealth === 'function') {
+                    if (pageId === 'health') {
+                        dashboard.loadHealth();
+                    } else if (pageId === 'metrics') {
+                        dashboard.loadMetricsUI();
+                    } else if (pageId === 'audit') {
+                        dashboard.loadAuditLogs();
+                    }
+                } else {
+                    console.warn('Dashboard not fully initialized, deferring data load...');
+                    // Retry after a short delay
+                    setTimeout(() => {
+                        if (window.dashboard && typeof dashboard.loadHealth === 'function') {
+                            if (pageId === 'health') dashboard.loadHealth();
+                            else if (pageId === 'metrics') dashboard.loadMetricsUI();
+                            else if (pageId === 'audit') dashboard.loadAuditLogs();
+                        }
+                    }, 500);
                 }
 
                 // Update URL hash
@@ -582,7 +716,7 @@
     <!-- Main Application -->
     <script src="/static/app.js"></script>
 
-    <!-- Enhanced Styles -->
+    <!-- Enhanced Styles (unique rules not in main.css) -->
     <style>
         /* Page visibility control */
         .page {
@@ -649,13 +783,7 @@
             box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.1);
         }
 
-        /* Panel actions */
-        .panel-actions {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
+        /* Status filter dropdown */
         #status-filter {
             padding: 0.5rem 1rem;
             background: var(--bg-tertiary);
@@ -666,240 +794,122 @@
             cursor: pointer;
         }
 
-        /* Modal improvements */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
+        /* Health and Metrics Grid */
+        .health-grid,
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            padding: 1rem;
         }
 
-        .modal-content {
-            background: var(--bg-secondary);
-            border-radius: 12px;
+        .health-card,
+        .metric-card {
+            background: var(--bg-card);
             border: 1px solid var(--border-primary);
-            max-width: 600px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            border-radius: 12px;
             padding: 1.5rem;
-            border-bottom: 1px solid var(--border-primary);
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .modal-header h3 {
-            margin: 0;
-            color: var(--accent-primary);
+        .health-card:hover,
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.1);
         }
 
-        .modal-close {
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-
-        .modal-close:hover {
-            background: var(--bg-hover);
-            color: var(--text-primary);
-        }
-
-        .modal-body {
-            padding: 1.5rem;
-        }
-
-        .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 1rem;
-            padding: 1.5rem;
-            border-top: 1px solid var(--border-primary);
-        }
-
-        /* Form styling */
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
+        .health-card h4,
+        .metric-card h4 {
+            margin: 0 0 1rem 0;
             color: var(--text-secondary);
             font-size: 0.9rem;
+            font-weight: 500;
         }
 
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
+        .health-indicator {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .health-indicator.healthy {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .health-indicator.warning {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        .health-indicator.unhealthy {
+            background: rgba(255, 59, 48, 0.2);
+            color: #ff3b30;
+            border: 1px solid rgba(255, 59, 48, 0.3);
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Form controls for advanced search (not in main.css) */
+        .form-control {
             width: 100%;
-            padding: 0.75rem;
+            padding: 0.5rem 1rem;
             background: var(--bg-tertiary);
             border: 1px solid var(--border-primary);
             border-radius: 8px;
             color: var(--text-primary);
             font-size: 0.9rem;
             font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
-        .form-group textarea {
-            resize: vertical;
-            font-family: 'Fira Code', 'JetBrains Mono', monospace;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
+        .form-control:focus {
             outline: none;
             border-color: var(--accent-primary);
             box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.1);
         }
 
-        /* Stats grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-primary);
-            border-radius: 12px;
-            padding: 1.5rem;
+        /* Enhanced panel actions (not in main.css) */
+        .panel-actions {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            transition: all 0.2s;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
 
-        .stat-card:hover {
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.15);
+        .panel-actions .btn {
+            white-space: nowrap;
         }
 
-        .stat-icon {
-            font-size: 2rem;
+        .panel-actions select {
+            min-width: 150px;
         }
 
-        .stat-content {
-            flex: 1;
-        }
-
-        .stat-label {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            margin-bottom: 0.25rem;
-        }
-
-        .stat-value {
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--accent-primary);
-            font-family: 'Fira Code', monospace;
-        }
-
-        /* Panel styling */
-        .panel {
-            background: var(--bg-card);
+        /* Type badges for audit logs (not in main.css) */
+        .type-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: var(--bg-tertiary);
             border: 1px solid var(--border-primary);
             border-radius: 12px;
-            margin-bottom: 2rem;
-            overflow: hidden;
-        }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--border-primary);
-        }
-
-        .panel-header h3 {
-            margin: 0;
-            font-size: 1.25rem;
-            color: var(--text-primary);
-        }
-
-        /* Table styling */
-        .table-container {
-            overflow-x: auto;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .data-table th {
-            background: var(--bg-secondary);
-            padding: 1rem;
-            text-align: left;
-            font-size: 0.85rem;
-            font-weight: 600;
+            font-size: 0.8rem;
+            font-weight: 500;
             color: var(--text-secondary);
-            border-bottom: 1px solid var(--border-primary);
         }
 
-        .data-table td {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-primary);
-            color: var(--text-primary);
-        }
-
-        .data-table tbody tr:hover {
-            background: var(--bg-hover);
-        }
-
-        .empty-hint {
-            text-align: center;
-            padding: 3rem;
-            color: var(--text-muted);
-        }
-
-        /* Toast container */
-        #toast-container {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            z-index: 10000;
-        }
-
-        /* Responsive design */
+        /* Responsive design for inline components */
         @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
             .quick-actions {
                 grid-template-columns: 1fr;
-            }
-
-            .panel-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
             }
 
             .panel-actions {
@@ -913,6 +923,74 @@
             }
         }
     </style>
+
+    <!-- Persistent Modal Containers -->
+    <div id="modal-container">
+        <!-- Command Modal -->
+        <div id="command-modal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3>⚡ Send Command</h3>
+                    <button class="modal-close" onclick="dashboard.closeCommandModal()">&times;</button>
+                </div>
+                <div class="modal-body" id="command-modal-body">
+                    <!-- Content populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Payload Builder Modal -->
+        <div id="payload-builder-modal" class="modal" style="display: none;">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h3>🔧 Payload Builder</h3>
+                    <button class="modal-close" onclick="dashboard.closeModal('payload-builder-modal')">&times;</button>
+                </div>
+                <div class="modal-body" id="payload-builder-body">
+                    <!-- Content populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Agent Builder Modal -->
+        <div id="agent-builder-modal" class="modal" style="display: none;">
+            <div class="modal-content medium">
+                <div class="modal-header">
+                    <h3>🔨 Agent Builder</h3>
+                    <button class="modal-close" onclick="dashboard.closeModal('agent-builder-modal')">&times;</button>
+                </div>
+                <div class="modal-body" id="agent-builder-body">
+                    <!-- Content populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- File Manager Modal -->
+        <div id="file-manager-modal" class="modal" style="display: none;">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h3>📁 File Manager</h3>
+                    <button class="modal-close" onclick="dashboard.closeModal('file-manager-modal')">&times;</button>
+                </div>
+                <div class="modal-body" id="file-manager-body">
+                    <!-- Content populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Certificate Viewer Modal -->
+        <div id="cert-viewer-modal" class="modal" style="display: none;">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h3>🔐 PKI Certificate Inspector</h3>
+                    <button class="modal-close" onclick="dashboard.closeModal('cert-viewer-modal')">&times;</button>
+                </div>
+                <div class="modal-body" id="cert-viewer-body">
+                    <!-- Content populated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

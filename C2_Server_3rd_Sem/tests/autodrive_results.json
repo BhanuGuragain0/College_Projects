@@ -1,0 +1,278 @@
+{
+  "timestamp": "2026-02-06T17:23:37.385459+00:00",
+  "tests": [
+    {
+      "name": "API /api/stats",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.388885+00:00",
+      "message": "Status 200",
+      "details": {}
+    },
+    {
+      "name": "API /api/agents",
+      "passed": false,
+      "timestamp": "2026-02-06T17:23:37.390509+00:00",
+      "message": "Status 500",
+      "details": {}
+    },
+    {
+      "name": "API /api/commands",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.391593+00:00",
+      "message": "Status 200",
+      "details": {}
+    },
+    {
+      "name": "API /api/audit/logs",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.392564+00:00",
+      "message": "Status 200",
+      "details": {}
+    },
+    {
+      "name": "API /api/audit/events",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.393628+00:00",
+      "message": "Status 200",
+      "details": {}
+    },
+    {
+      "name": "API /api/certificates/list",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.394705+00:00",
+      "message": "Status 200",
+      "details": {}
+    },
+    {
+      "name": "API /api/config/commands",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.395294+00:00",
+      "message": "Status 200",
+      "details": {}
+    },
+    {
+      "name": "Command Submission",
+      "passed": false,
+      "timestamp": "2026-02-06T17:23:37.396348+00:00",
+      "message": "Status 400",
+      "details": {}
+    },
+    {
+      "name": "Batch Command Execution",
+      "passed": false,
+      "timestamp": "2026-02-06T17:23:37.397162+00:00",
+      "message": "Status 400, 2 agents",
+      "details": {}
+    },
+    {
+      "name": "Audit Logging",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.398545+00:00",
+      "message": "Found 10 audit logs",
+      "details": {
+        "has_command_logs": true
+      }
+    },
+    {
+      "name": "PKI Validation",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.410152+00:00",
+      "message": "Valid: True, Issuer OK: True, CN: True",
+      "details": {
+        "operator_cn": "admin",
+        "valid_from": "2026-01-15T07:25:36+00:00",
+        "valid_until": "2027-01-15T07:25:36+00:00"
+      }
+    },
+    {
+      "name": "Payload Templates API",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.411056+00:00",
+      "message": "Status 200",
+      "details": {
+        "templates": {
+          "basic_recon": {
+            "name": "Basic Reconnaissance",
+            "description": "Gather system information, network config, and running processes",
+            "commands_count": 4,
+            "requires_admin": false,
+            "risk_level": "medium"
+          },
+          "persistence_setup": {
+            "name": "Establish Persistence",
+            "description": "Configure agent to survive reboots",
+            "commands_count": 1,
+            "requires_admin": true,
+            "risk_level": "medium"
+          },
+          "credential_harvest": {
+            "name": "Credential Harvesting",
+            "description": "Extract credentials from memory and disk",
+            "commands_count": 2,
+            "requires_admin": true,
+            "risk_level": "high"
+          },
+          "network_pivot": {
+            "name": "Network Pivoting",
+            "description": "Scan internal network and identify pivot targets",
+            "commands_count": 3,
+            "requires_admin": false,
+            "risk_level": "medium"
+          },
+          "data_exfiltration": {
+            "name": "Data Exfiltration",
+            "description": "Download sensitive files from target",
+            "commands_count": 2,
+            "requires_admin": false,
+            "risk_level": "medium"
+          }
+        }
+      }
+    },
+    {
+      "name": "Payload Build API",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.411758+00:00",
+      "message": "Status 400",
+      "details": {}
+    },
+    {
+      "name": "File Manager List API",
+      "passed": false,
+      "timestamp": "2026-02-06T17:23:37.412412+00:00",
+      "message": "Status 400",
+      "details": {}
+    },
+    {
+      "name": "Certificate Viewer API",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.413975+00:00",
+      "message": "Status 200",
+      "details": {
+        "certificate_count": 2
+      }
+    },
+    {
+      "name": "WebSocket Connection",
+      "passed": false,
+      "timestamp": "2026-02-06T17:23:37.415314+00:00",
+      "message": "401, message='Invalid response status', url='ws://127.0.0.1:8080/ws'",
+      "details": {}
+    },
+    {
+      "name": "Payload Templates API",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.416261+00:00",
+      "message": "Status 200",
+      "details": {
+        "templates": {
+          "basic_recon": {
+            "name": "Basic Reconnaissance",
+            "description": "Gather system information, network config, and running processes",
+            "commands_count": 4,
+            "requires_admin": false,
+            "risk_level": "medium"
+          },
+          "persistence_setup": {
+            "name": "Establish Persistence",
+            "description": "Configure agent to survive reboots",
+            "commands_count": 1,
+            "requires_admin": true,
+            "risk_level": "medium"
+          },
+          "credential_harvest": {
+            "name": "Credential Harvesting",
+            "description": "Extract credentials from memory and disk",
+            "commands_count": 2,
+            "requires_admin": true,
+            "risk_level": "high"
+          },
+          "network_pivot": {
+            "name": "Network Pivoting",
+            "description": "Scan internal network and identify pivot targets",
+            "commands_count": 3,
+            "requires_admin": false,
+            "risk_level": "medium"
+          },
+          "data_exfiltration": {
+            "name": "Data Exfiltration",
+            "description": "Download sensitive files from target",
+            "commands_count": 2,
+            "requires_admin": false,
+            "risk_level": "medium"
+          }
+        }
+      }
+    },
+    {
+      "name": "Payload Build API",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.417126+00:00",
+      "message": "Status 400",
+      "details": {}
+    },
+    {
+      "name": "File Manager List API",
+      "passed": false,
+      "timestamp": "2026-02-06T17:23:37.417622+00:00",
+      "message": "Status 400",
+      "details": {}
+    },
+    {
+      "name": "Certificate Viewer API",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.418641+00:00",
+      "message": "Status 200",
+      "details": {
+        "certificate_count": 2
+      }
+    },
+    {
+      "name": "Batch Command Execution",
+      "passed": false,
+      "timestamp": "2026-02-06T17:23:37.419386+00:00",
+      "message": "Status 400, 2 agents",
+      "details": {}
+    },
+    {
+      "name": "PKI Validation",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.419738+00:00",
+      "message": "Valid: True, Issuer OK: True, CN: True",
+      "details": {
+        "operator_cn": "admin",
+        "valid_from": "2026-01-15T07:25:36+00:00",
+        "valid_until": "2027-01-15T07:25:36+00:00"
+      }
+    },
+    {
+      "name": "Audit Logging",
+      "passed": true,
+      "timestamp": "2026-02-06T17:23:37.421114+00:00",
+      "message": "Found 10 audit logs",
+      "details": {
+        "has_command_logs": true
+      }
+    },
+    {
+      "name": "WebSocket Connection",
+      "passed": false,
+      "timestamp": "2026-02-06T17:23:37.422333+00:00",
+      "message": "401, message='Invalid response status', url='ws://127.0.0.1:8080/ws'",
+      "details": {}
+    }
+  ],
+  "passed": 16,
+  "failed": 8,
+  "warnings": 0,
+  "total": 24,
+  "features": {
+    "payload_builder": true,
+    "file_manager": false,
+    "certificate_viewer": true,
+    "batch_commands": false,
+    "pki_validation": true,
+    "audit_logging": true,
+    "websocket_updates": false
+  }
+}

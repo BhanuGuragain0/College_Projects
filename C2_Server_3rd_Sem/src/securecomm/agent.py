@@ -414,8 +414,8 @@ class SecureAgent:
         self.logger.info("🔄 Reconnecting...")
         try:
             self.sock.close()
-        except:
-            pass
+        except (OSError, AttributeError) as e:
+            self.logger.debug(f"Error closing socket during reconnect: {e}")
         delattr(self, 'sock')
         time.sleep(self.sleep_interval)
     
@@ -572,14 +572,18 @@ class SecureAgent:
         return x509.load_pem_x509_certificate(cert_bytes, default_backend())
 
     def _validate_operator_certificate(self, certificate: x509.Certificate) -> None:
-        self.pki_manager.validate_certificate(certificate, self.ca_certificate)
-        cert_info = self.pki_manager.get_certificate_info(str(certificate.serial_number))
-        if not cert_info:
-            raise ValueError("Operator certificate not issued by PKI")
-        if cert_info.get("type") != "operator":
-            raise ValueError("Operator certificate type mismatch")
+        """Validate operator certificate using unified validation method"""
+        expected_cn = self.expected_operator_id if self.expected_operator_id else None
+        self.pki_manager.validate_certificate_unified(
+            certificate,
+            self.ca_certificate,
+            expected_cn=expected_cn,
+            expected_type="operator",
+            require_db_registration=True
+        )
 
     def _validate_operator_identity(self, certificate: x509.Certificate) -> None:
+        """Deprecated - validation now unified in _validate_operator_certificate"""
         if not self.expected_operator_id:
             return
         cn = certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value

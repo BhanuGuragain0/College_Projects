@@ -12,7 +12,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Callable, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Dict, Optional, Tuple
 
 from cryptography import x509
 from cryptography.x509.oid import NameOID
@@ -34,6 +34,9 @@ from .message_utils import (
 from .operational_db import AgentRecord, CommandRecord, OperationalDatabase
 from .security import SecurityModule, SecurityError
 from .session import SessionManager
+
+if TYPE_CHECKING:
+    from .pki_manager import PKIManager
 
 CertificateValidator = Callable[[x509.Certificate], None]
 
@@ -58,6 +61,8 @@ class CommandHandler:
         audit_logger: Optional[object] = None,
         auth_gateway: Optional[AuthGateway] = None,
         certificate_validator: Optional[CertificateValidator] = None,
+        pki_manager: Optional["PKIManager"] = None,
+        ca_certificate: Optional[x509.Certificate] = None,
     ) -> None:
         self.operator_id = operator_id
         self._operator_signing_key = operator_signing_key
@@ -66,6 +71,8 @@ class CommandHandler:
         self.operational_db = operational_db
         self.auth_gateway = auth_gateway
         self.certificate_validator = certificate_validator
+        self._pki_manager = pki_manager
+        self._ca_certificate = ca_certificate
         self._logger = logging.getLogger(__name__)
         self._audit = audit_logger
         self._agent_certificates: Dict[str, x509.Certificate] = {}
@@ -307,9 +314,20 @@ class CommandHandler:
         return token
 
     def _validate_certificate(self, certificate: x509.Certificate) -> None:
-        if not self.certificate_validator:
+        """Validate agent certificate using unified validation method"""
+        if self.certificate_validator:
+            # Legacy validator for custom validation
+            self.certificate_validator(certificate)
+        elif self._pki_manager and self._ca_certificate:
+            # Use unified validation method from PKI manager
+            self._pki_manager.validate_certificate_unified(
+                certificate,
+                self._ca_certificate,
+                expected_type="agent",
+                require_db_registration=True
+            )
+        else:
             raise ValueError("Certificate validator is required for agent authentication")
-        self.certificate_validator(certificate)
 
     def _derive_session_key(self, agent_public_key: bytes) -> Tuple[bytes, bytes]:
         crypto = CryptoEngine()

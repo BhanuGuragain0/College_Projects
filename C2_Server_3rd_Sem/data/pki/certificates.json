@@ -7,6 +7,14 @@
       "issued_at": "2026-01-15T07:25:36.196183",
       "expires_at": "2027-01-15T07:25:36",
       "revoked": false
+    },
+    {
+      "serial_number": "721151292753015837478347441312824276292768201015",
+      "common_name": "test-agent-001",
+      "type": "agent",
+      "issued_at": "2026-02-06T09:04:44.383532+00:00",
+      "expires_at": "2027-02-06T09:04:44+00:00",
+      "revoked": false
     }
   ]
 }

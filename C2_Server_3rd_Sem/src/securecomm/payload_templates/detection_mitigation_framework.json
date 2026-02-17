@@ -1,0 +1,123 @@
+{
+  "id": "detection_mitigation_framework",
+  "name": "Blue Team Detection & Response Framework",
+  "description": "Companion template for demonstrating defensive countermeasures, detection signatures, and incident response actions against each attack technique",
+  "version": "2.0",
+  "author": "SecureComm C2 - Defense Team",
+  "category": "defense",
+  "platform": "cross-platform",
+  "risk_level": "low",
+  "requires_admin": false,
+  "defense_categories": {
+    "detection_rules": {
+      "sigma_rules": [
+        {
+          "title": "Reconnaissance Command Detection",
+          "detection": "process_creation where (commandline contains 'whoami' or commandline contains 'hostname' or commandline contains 'ipconfig')",
+          "level": "low"
+        },
+        {
+          "title": "Credential Access Attempt",
+          "detection": "process_creation where (commandline contains 'mimikatz' or commandline contains 'sekurlsa' or commandline contains 'procdump lsass')",
+          "level": "critical"
+        },
+        {
+          "title": "Cloud Metadata Access",
+          "detection": "network_connection where (dst_ip='169.254.169.254')",
+          "level": "high"
+        }
+      ],
+      "edr_alerts": [
+        "Suspicious PowerShell execution",
+        "Credential dumping tool detected",
+        "Abnormal network connection",
+        "Container escape attempt"
+      ]
+    },
+    "mitigation_strategies": {
+      "reconnaissance": [
+        "Enable command-line logging (4688)",
+        "Deploy deception tokens and honeyfiles",
+        "Monitor netstat and process enumeration"
+      ],
+      "credential_access": [
+        "Enable Credential Guard (Windows)",
+        "Restrict LSASS access (PPL)",
+        "Monitor SAM/SECURITY registry access"
+      ],
+      "lateral_movement": [
+        "Disable SMBv1, restrict SMB lateral traffic",
+        "Enable Windows Firewall for PS remoting",
+        "Monitor WMI and DCOM activity"
+      ],
+      "cloud_security": [
+        "Use IMDSv2 with hop limit",
+        "Implement service account key rotation",
+        "Enable CloudTrail/Activity Log monitoring"
+      ]
+    },
+    "incident_response": {
+      "triage_steps": [
+        "Isolate affected systems from network",
+        "Capture volatile memory (RAM dump)",
+        "Preserve logs and audit trails",
+        "Analyze persistence mechanisms"
+      ],
+      "containment_actions": [
+        "Revoke compromised credentials",
+        "Rotate service account keys",
+        "Block malicious IPs/domains",
+        "Disable compromised accounts"
+      ],
+      "recovery_procedures": [
+        "Rebuild affected systems from known-good images",
+        "Restore from clean backups",
+        "Reimage compromised containers",
+        "Reset all cloud access keys"
+      ]
+    }
+  },
+  "detection_engineering": {
+    "siem_queries": {
+      "splunk": "index=windows EventCode=4688 CommandLine IN (*whoami*,*hostname*,*ipconfig*) | stats count by Computer, User, CommandLine",
+      "elastic": "event.code:4688 AND process.args:(whoami OR hostname OR ipconfig)",
+      "sentinel": "SecurityEvent | where EventID == 4688 and CommandLine contains 'whoami'"
+    },
+    "threat_hunting": [
+      "Hunt for unusual process parent-child relationships",
+      "Search for encoded PowerShell commands",
+      "Identify processes accessing lsass.exe",
+      "Monitor for cloud metadata service queries"
+    ]
+  },
+  "presentation_talking_points": [
+    "Every attack has a detection opportunity",
+    "Defense in depth requires multiple layers",
+    "Logging and monitoring are critical",
+    "Automated response reduces dwell time",
+    "Red team exercises validate detection capabilities"
+  ],
+  "academic_value": {
+    "learning_objectives": [
+      "Understand attack-defend relationship",
+      "Learn detection engineering principles",
+      "Practice incident response procedures",
+      "Demonstrate defense-in-depth concepts"
+    ],
+    "assessment_criteria": [
+      "Can identify attack techniques from logs",
+      "Can create detection rules",
+      "Can propose mitigation strategies",
+      "Can execute incident response playbook"
+    ]
+  },
+  "mitre_defend_mapping": {
+    "D3-DA": "Detect and Analyze",
+    "D3-LR": "Lockdown and Restrict",
+    "D3-RM": "Restore and Maintain"
+  },
+  "tags": ["defense", "detection", "mitigation", "blue-team", "academic", "framework"],
+  "created_at": "2026-02-11T12:00:00Z",
+  "updated_at": "2026-02-11T12:00:00Z",
+  "audit_note": "Essential for demonstrating defensive mindset and complete security understanding"
+}

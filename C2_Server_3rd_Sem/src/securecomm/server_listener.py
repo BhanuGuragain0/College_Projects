@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -70,6 +71,12 @@ class SecureCommServer:
         self.audit_logger = audit_logger
         self._server_socket = None
         self._running = False
+        
+        # Thread pool to manage concurrent agent connections (prevents unlimited thread creation)
+        self._thread_pool = ThreadPoolExecutor(
+            max_workers=100,
+            thread_name_prefix="agent_handler_"
+        )
 
         self._operator_signing_key = operator_signing_key or self._load_operator_signing_key(
             operator_key_password
@@ -107,6 +114,10 @@ class SecureCommServer:
                 pass
         for agent_id in list(self.network.connections.keys()):
             self.disconnect_agent(agent_id)
+        
+        # Shutdown thread pool gracefully
+        self._thread_pool.shutdown(wait=True)
+        self._logger.info("Thread pool shutdown complete")
 
     def send_command(self, agent_id: str, cmd_type: str, payload: str, auth_token: Optional[str] = None) -> str:
         """Send a signed command to an agent and return the task_id."""
@@ -143,12 +154,12 @@ class SecureCommServer:
                 client_socket, address = self._server_socket.accept()
             except Exception:
                 continue
-            thread = threading.Thread(
-                target=self._handle_connection,
-                args=(client_socket, address),
-                daemon=True,
+            # Submit connection handling to thread pool instead of unbounded thread creation
+            self._thread_pool.submit(
+                self._handle_connection,
+                client_socket,
+                address,
             )
-            thread.start()
 
     def _handle_connection(self, client_socket, address: Tuple[str, int]) -> None:
         agent_id = None
@@ -213,9 +224,10 @@ class SecureCommServer:
         return str(ca_path.parent)
 
     def _validate_agent_certificate(self, certificate: x509.Certificate) -> None:
-        self._pki_manager.validate_certificate(certificate, self._ca_certificate)
-        cert_info = self._pki_manager.get_certificate_info(str(certificate.serial_number))
-        if not cert_info:
-            raise ValueError("Agent certificate not issued by PKI")
-        if cert_info.get("type") != "agent":
-            raise ValueError("Agent certificate type mismatch")
+        """Validate agent certificate using unified validation method"""
+        self._pki_manager.validate_certificate_unified(
+            certificate,
+            self._ca_certificate,
+            expected_type="agent",
+            require_db_registration=True
+        )
