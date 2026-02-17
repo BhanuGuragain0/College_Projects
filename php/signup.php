@@ -18,7 +18,7 @@ if (!isset($_POST['csrf_token']) || !verify_csrf_token($_POST['csrf_token'])) {
 }
 
 // Check rate limiting
-$rate_limit = check_rate_limit('signup');
+$rate_limit = check_rate_limit($conn, 'signup');
 if (!$rate_limit['allowed']) {
     log_security_event('SIGNUP_ATTEMPT', 'Rate limit exceeded for signup', 'WARNING');
     send_response('error', 'Too many signup attempts. Please try again later.');

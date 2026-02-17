@@ -1,11 +1,7 @@
--- phpMyAdmin SQL Dump
--- version 5.2.0
--- https://www.phpmyadmin.net/
---
--- Host: 127.0.0.1
--- Generation Time: Jan 14, 2023 at 03:10 PM
--- Server version: 10.4.27-MariaDB
--- PHP Version: 8.1.12
+-- ============================================================================
+-- CYBER CHAT APP - DATABASE SCHEMA
+-- Modernized PHP Chat Application with SSE Support
+-- ============================================================================
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -24,82 +20,108 @@ SET time_zone = "+00:00";
 
 --
 -- Table structure for table `messages`
+-- Stores chat messages between users
 --
 
-CREATE TABLE `messages` (
-  `msg_id` int(11) NOT NULL,
-  `incoming_msg_id` int(255) NOT NULL,
-  `outgoing_msg_id` int(255) NOT NULL,
-  `msg` varchar(1000) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+CREATE TABLE IF NOT EXISTS `messages` (
+  `msg_id` int(11) NOT NULL AUTO_INCREMENT,
+  `incoming_msg_id` int(11) NOT NULL COMMENT 'Recipient user unique_id',
+  `outgoing_msg_id` int(11) NOT NULL COMMENT 'Sender user unique_id',
+  `msg` text NOT NULL COMMENT 'Message content',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_read` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'Read receipt status',
+  PRIMARY KEY (`msg_id`),
+  KEY `idx_incoming` (`incoming_msg_id`),
+  KEY `idx_outgoing` (`outgoing_msg_id`),
+  KEY `idx_created_at` (`created_at`),
+  KEY `idx_conversation` (`incoming_msg_id`, `outgoing_msg_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Chat messages';
 
 -- --------------------------------------------------------
 
 --
 -- Table structure for table `users`
+-- Stores user accounts and profile information
 --
 
-CREATE TABLE `users` (
-  `user_id` int(11) NOT NULL,
-  `unique_id` int(255) NOT NULL,
-  `fname` varchar(255) NOT NULL,
-  `lname` varchar(255) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `img` varchar(255) NOT NULL,
-  `status` varchar(255) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+CREATE TABLE IF NOT EXISTS `users` (
+  `user_id` int(11) NOT NULL AUTO_INCREMENT,
+  `unique_id` int(11) NOT NULL COMMENT 'Public user identifier for chats',
+  `fname` varchar(255) NOT NULL COMMENT 'First name',
+  `lname` varchar(255) NOT NULL COMMENT 'Last name',
+  `email` varchar(255) NOT NULL COMMENT 'Email address (unique)',
+  `password` varchar(255) NOT NULL COMMENT 'Bcrypt hashed password',
+  `img` varchar(255) NOT NULL DEFAULT 'default.png' COMMENT 'Profile image filename',
+  `status` varchar(255) NOT NULL DEFAULT 'Offline' COMMENT 'User status: Active now, Offline',
+  `last_seen` timestamp NULL DEFAULT NULL COMMENT 'Last activity timestamp',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `unique_id` (`unique_id`),
+  UNIQUE KEY `email` (`email`),
+  KEY `idx_status` (`status`),
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='User accounts';
 
 -- --------------------------------------------------------
 
 --
 -- Table structure for table `password_resets`
+-- Stores password reset tokens
 --
 
-CREATE TABLE `password_resets` (
-    `id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `email` VARCHAR(255) NOT NULL,
-    `token` VARCHAR(255) NOT NULL,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+CREATE TABLE IF NOT EXISTS `password_resets` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `email` varchar(255) NOT NULL,
+  `token` varchar(255) NOT NULL,
+  `expires_at` timestamp NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `used` tinyint(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_email` (`email`),
+  KEY `idx_token` (`token`),
+  KEY `idx_expires` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Password reset tokens';
+
+-- --------------------------------------------------------
 
 --
--- Indexes for dumped tables
+-- Table structure for table `login_attempts`
+-- Tracks failed login attempts for rate limiting
 --
 
---
--- Indexes for table `messages`
---
-ALTER TABLE `messages`
-  ADD PRIMARY KEY (`msg_id`);
+CREATE TABLE IF NOT EXISTS `login_attempts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ip_address` varchar(45) NOT NULL COMMENT 'IPv4 or IPv6 address',
+  `email` varchar(255) DEFAULT NULL COMMENT 'Attempted email',
+  `attempted_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `success` tinyint(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_ip_address` (`ip_address`),
+  KEY `idx_attempted_at` (`attempted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Login attempt tracking for rate limiting';
+
+-- --------------------------------------------------------
 
 --
--- Indexes for table `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`user_id`);
-
---
--- AUTO_INCREMENT for dumped tables
+-- Table structure for table `user_sessions`
+-- Active user sessions for security management
 --
 
---
--- AUTO_INCREMENT for table `messages`
---
-ALTER TABLE `messages`
-  MODIFY `msg_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
-
---
--- AUTO_INCREMENT for table `users`
---
-ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT for table `password_resets`
---
-ALTER TABLE `password_resets`
-  MODIFY `id` INT(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+CREATE TABLE IF NOT EXISTS `user_sessions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_unique_id` int(11) NOT NULL,
+  `session_token` varchar(255) NOT NULL,
+  `ip_address` varchar(45) NOT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_activity` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `session_token` (`session_token`),
+  KEY `idx_user_unique_id` (`user_unique_id`),
+  KEY `idx_last_activity` (`last_activity`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Active user sessions';
 
 COMMIT;
 

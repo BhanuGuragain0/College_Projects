@@ -7,23 +7,25 @@ form.onsubmit = (e) => {
 };
 
 continueBtn.onclick = () => {
-    // Using Fetch API for better readability and modern approach
     let formData = new FormData(form);
+    continueBtn.classList.add('loading');
 
     fetch("php/login.php", {
         method: "POST",
         body: formData
     })
-        .then(response => response.text())
+        .then(response => response.json())
         .then(data => {
-            if (data === "success") {
+            continueBtn.classList.remove('loading');
+            if (data.status === "success") {
                 window.location.href = "users.php";
             } else {
                 errorText.style.display = "block";
-                errorText.textContent = data;
+                errorText.textContent = data.message || "Login failed";
             }
         })
         .catch(error => {
+            continueBtn.classList.remove('loading');
             console.error("Error:", error);
             errorText.style.display = "block";
             errorText.textContent = "An error occurred. Please try again.";

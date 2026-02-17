@@ -80,9 +80,3 @@ $stmt->close();
 $stmt2->close();
 $conn->close();
 ?>
-
-$conn->close();
-?>
-
-$conn->close();
-?>

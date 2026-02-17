@@ -1,43 +1,79 @@
 <?php
-session_start();
+// ============================================================================
+// CYBER CHAT APP - INSERT MESSAGE ENDPOINT
+// Modernized with Security & JSON Responses
+// ============================================================================
 
-function log_message($message) {
-    $log_file = 'log.txt';
-    $current_time = date('Y-m-d H:i:s');
-    $log_message = $current_time . ' - ' . $message . "\n";
-    file_put_contents($log_file, $log_message, FILE_APPEND);
+session_start();
+include_once "config.php";
+include_once "security.php";
+
+header('Content-Type: application/json');
+
+// Require login
+require_login();
+
+// Only accept POST requests
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    send_response('error', 'Invalid request method');
 }
 
-if (isset($_SESSION['unique_id'])) {
-    include_once "config.php";
+// Get and validate inputs
+$outgoing_id = $_SESSION['unique_id'];
+$incoming_id = filter_var($_POST['incoming_id'] ?? '', FILTER_VALIDATE_INT);
+$message = isset($_POST['message']) ? trim($_POST['message']) : '';
 
-    $outgoing_id = $_SESSION['unique_id'];
-    $incoming_id = filter_var($_POST['incoming_id'], FILTER_VALIDATE_INT);
-    $message = htmlspecialchars($_POST['message'], ENT_QUOTES, 'UTF-8');
+// Validate incoming_id
+if ($incoming_id === false || $incoming_id <= 0) {
+    log_security_event('MESSAGE_ERROR', "Invalid incoming_id: " . ($_POST['incoming_id'] ?? 'NULL'), 'WARNING');
+    send_response('error', 'Invalid recipient');
+}
 
-    if ($incoming_id === false) {
-        log_message("Invalid incoming_id: " . $_POST['incoming_id']);
-        die("Invalid incoming ID.");
-    }
+// Prevent self-messaging
+if ($incoming_id == $outgoing_id) {
+    log_security_event('MESSAGE_ERROR', "User attempted to message themselves", 'WARNING');
+    send_response('error', 'Cannot message yourself');
+}
 
-    if (!empty($message)) {
-        $sql = $conn->prepare("INSERT INTO messages (incoming_msg_id, outgoing_msg_id, msg) VALUES (?, ?, ?)");
-        $sql->bind_param("iis", $incoming_id, $outgoing_id, $message);
-        
-        if ($sql->execute()) {
-            log_message("Message from $outgoing_id to $incoming_id sent successfully.");
-            echo "Message sent successfully!";
-        } else {
-            log_message("Failed to send message from $outgoing_id to $incoming_id: " . $sql->error);
-            echo "Message sending failed!";
-        }
-    } else {
-        log_message("Empty message attempted to be sent from $outgoing_id to $incoming_id.");
-        echo "Message cannot be empty.";
-    }
+// Verify recipient exists
+$recipient = get_user_by_id($conn, $incoming_id);
+if (!$recipient) {
+    log_security_event('MESSAGE_ERROR', "Message to non-existent user: $incoming_id", 'WARNING');
+    send_response('error', 'Recipient not found');
+}
+
+// Validate message
+if (empty($message)) {
+    send_response('error', 'Message cannot be empty');
+}
+
+// Check message length
+if (strlen($message) > 10000) {
+    send_response('error', 'Message too long (max 10,000 characters)');
+}
+
+// Sanitize message
+$message = htmlspecialchars($message, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+// Insert message
+$stmt = $conn->prepare("INSERT INTO messages (incoming_msg_id, outgoing_msg_id, msg, created_at) VALUES (?, ?, ?, NOW())");
+$stmt->bind_param("iis", $incoming_id, $outgoing_id, $message);
+
+if ($stmt->execute()) {
+    $msg_id = $stmt->insert_id;
+    $stmt->close();
+    
+    log_security_event('MESSAGE_SENT', "Message $msg_id sent from $outgoing_id to $incoming_id", 'INFO');
+    
+    send_response('success', 'Message sent', [
+        'msg_id' => $msg_id,
+        'timestamp' => date('Y-m-d H:i:s')
+    ]);
 } else {
-    log_message("Unauthorized access attempt.");
-    header("Location: ../login.php");
-    exit();
+    $error = $stmt->error;
+    $stmt->close();
+    
+    log_security_event('MESSAGE_ERROR', "Failed to send message: $error", 'ERROR');
+    send_response('error', 'Failed to send message');
 }
 ?>

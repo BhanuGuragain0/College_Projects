@@ -1,64 +1,126 @@
-<?php
-#  session_start();
-#  if(isset($_SESSION['unique_id'])){
-#    header("location: users.php");
-#  }
-?>
-<html>
-  <head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER CHAT - Sign Up</title>
     <link rel="stylesheet" href="css/signup.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-  </head>
+</head>
 <body>
-  <div id="particles-js"></div> 
+    <div class="terminal-container">
+        <div class="terminal-window">
+            <div class="terminal-header">
+                <div class="terminal-dot red"></div>
+                <div class="terminal-dot yellow"></div>
+                <div class="terminal-dot green"></div>
+                <span class="terminal-title">new_user_registration.exe</span>
+            </div>
+            <div class="terminal-body">
+                <div class="terminal-prompt">> SYSTEM.INIT("CYBER CHAT v2.0")</div>
+                <h2>Create New Account</h2>
+                
+                <form action="#" method="POST" autocomplete="off">
+                    <input type="hidden" name="csrf_token" class="csrf-token" value="">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fname">First Name</label>
+                            <input type="text" id="fname" name="fname" placeholder="John" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="lname">Last Name</label>
+                            <input type="text" id="lname" name="lname" placeholder="Doe" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" placeholder="user@domain.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="password" name="password" placeholder="••••••••" required>
+                            <button type="button" class="toggle-password" onclick="togglePassword()">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="password-strength">
+                            <div class="password-strength-bar" id="strength-bar"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group file-upload">
+                        <label>Profile Image</label>
+                        <div class="file-upload-label">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Click to upload or drag & drop</span>
+                            <input type="file" name="image" accept="image/*" id="image-upload">
+                        </div>
+                        <img id="preview" class="preview-image" alt="Preview">
+                    </div>
+                    
+                    <div class="error-message"></div>
+                    
+                    <button type="submit" class="btn-primary">Create Account</button>
+                </form>
+                
+                <div class="links">
+                    Already registered? <a href="login.html">Login here</a>
+                </div>
+            </div>
+        </div>
+    </div>
 
-  <div class="wrapper">
-    <section class="form signup">
-      <header>Realtime Chat App</header>
-      <form action="#" method="POST" enctype="multipart/form-data" autocomplete="off">
-        <div class="error-text"></div>
-        <div class="name-details">
-          <div class="field input">
-            <label>First Name</label>
-            <input type="text" name="fname" placeholder="First name" required>
-          </div>
-          <div class="field input">
-            <label>Last Name</label>
-            <input type="text" name="lname" placeholder="Last name" required>
-          </div>
-        </div>
-        <div class="field input">
-          <label>Email Address</label>
-          <input type="text" name="email" placeholder="Enter your email" required>
-        </div>
-        <div class="field input">
-          <label>Password</label>
-          <input type="password" name="password" placeholder="Enter new password" required>
-          <i class="fas fa-eye"></i>
-        </div>
-        <div class="field image">
-          <label>Select Image</label>
-          <input type="file" name="image" accept="image/x-png,image/gif,image/jpeg,image/jpg" required>
-        </div>
-        <div class="field button">
-          <input type="submit" name="submit" value="Continue to Chat">
-        </div>
-      </form>
-      <div class="link">Already signed up? <a href="login.html">Login now</a></div>
-    </section>
-  </div>
+    <script src="javascript/signup.js"></script>
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleBtn = document.querySelector('.toggle-password i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleBtn.classList.remove('fa-eye');
+                toggleBtn.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleBtn.classList.remove('fa-eye-slash');
+                toggleBtn.classList.add('fa-eye');
+            }
+        }
 
-  <script src="javascript/pass-show-hide.js"></script>
-  <script src="javascript/signup.js"></script>
-  <script>
-    particlesJS.load('particles-js', 'config/particles.json', function() {
-        console.log('particles.js loaded - callback');
-    });
-  </script>
+        document.getElementById('image-upload').addEventListener('change', function(e) {
+            const preview = document.getElementById('preview');
+            const file = e.target.files[0];
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.classList.add('show');
+                }
+                reader.readAsDataURL(file);
+            }
+        });
 
+        document.getElementById('password').addEventListener('input', function() {
+            const password = this.value;
+            const strengthBar = document.getElementById('strength-bar');
+            
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+            if (password.match(/[0-9]/)) strength++;
+            if (password.match(/[^a-zA-Z0-9]/)) strength++;
+            
+            strengthBar.className = 'password-strength-bar';
+            if (strength === 1) strengthBar.classList.add('weak');
+            else if (strength === 2) strengthBar.classList.add('medium');
+            else if (strength >= 3) strengthBar.classList.add('strong');
+        });
+    </script>
 </body>
 </html>

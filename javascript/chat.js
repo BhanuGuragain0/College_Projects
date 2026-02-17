@@ -5,7 +5,8 @@ const form = document.querySelector(".typing-area"),
     chatBox = document.querySelector(".chat-box");
 
 let lastMessageId = 0;
-let isLoading = false;
+let eventSource = null;
+let isConnected = false;
 
 form.onsubmit = (e) => {
     e.preventDefault();
@@ -31,13 +32,15 @@ sendBtn.onclick = () => {
         method: "POST",
         body: formData
     })
-        .then(response => response.text())
+        .then(response => response.json())
         .then((data) => {
-            inputField.value = "";
-            sendBtn.classList.remove("active");
-            scrollToBottom();
-            // Fetch messages immediately after sending
-            fetchMessages();
+            if (data.status === 'success') {
+                inputField.value = "";
+                sendBtn.classList.remove("active");
+                scrollToBottom();
+            } else {
+                showNotification(data.message || "Failed to send message", "error");
+            }
         })
         .catch(error => {
             console.error("Error sending message:", error);
@@ -53,33 +56,93 @@ chatBox.onmouseleave = () => {
     chatBox.classList.remove("active");
 };
 
-function fetchMessages() {
-    if (isLoading) return;
+// SSE Implementation for Real-time Chat
+function initSSE() {
+    if (eventSource) {
+        eventSource.close();
+    }
 
-    isLoading = true;
+    eventSource = new EventSource(`php/get-chat.php?incoming_id=${incoming_id}&last_msg_id=${lastMessageId}`);
 
-    fetch("php/get-chat.php?incoming_id=" + incoming_id, {
-        method: "GET"
-    })
-        .then(response => response.text())
-        .then(data => {
-            chatBox.innerHTML = data;
+    eventSource.addEventListener('connected', (e) => {
+        console.log('SSE Connected:', JSON.parse(e.data));
+        isConnected = true;
+    });
+
+    eventSource.addEventListener('message', (e) => {
+        const data = JSON.parse(e.data);
+        if (data.messages && data.messages.length > 0) {
+            appendMessages(data.messages);
+            lastMessageId = Math.max(...data.messages.map(m => m.msg_id));
             if (!chatBox.classList.contains("active")) {
                 scrollToBottom();
             }
-            isLoading = false;
-        })
-        .catch(error => {
-            console.error("Error fetching messages:", error);
-            isLoading = false;
-        });
+        }
+    });
+
+    eventSource.addEventListener('heartbeat', (e) => {
+        console.log('Heartbeat received');
+    });
+
+    eventSource.onerror = (error) => {
+        console.error('SSE Error:', error);
+        isConnected = false;
+        // Reconnect after 3 seconds
+        setTimeout(() => {
+            if (!isConnected) {
+                console.log('Attempting to reconnect SSE...');
+                initSSE();
+            }
+        }, 3000);
+    };
+
+    eventSource.onopen = () => {
+        console.log('SSE Connection opened');
+        isConnected = true;
+    };
 }
 
-// Fetch messages every 2 seconds (optimized from 500ms - 75% reduction in requests)
-setInterval(fetchMessages, 2000);
+function appendMessages(messages) {
+    messages.forEach(message => {
+        const isOutgoing = message.outgoing_msg_id == document.querySelector('.outgoing_id')?.value;
+        const messageHTML = createMessageHTML(message, isOutgoing);
+        chatBox.insertAdjacentHTML('beforeend', messageHTML);
+    });
+}
 
-// Initial fetch
-fetchMessages();
+function createMessageHTML(message, isOutgoing) {
+    const img = message.sender_img || 'default.png';
+    const name = `${message.sender_fname || ''} ${message.sender_lname || ''}`.trim();
+    
+    if (isOutgoing) {
+        return `<div class="chat outgoing">
+                    <div class="details">
+                        <p>${escapeHtml(message.msg)}</p>
+                        <span class="time">${formatTime(message.created_at)}</span>
+                    </div>
+                </div>`;
+    } else {
+        return `<div class="chat incoming">
+                    <img src="php/images/${img}" alt="${name}">
+                    <div class="details">
+                        <p>${escapeHtml(message.msg)}</p>
+                        <span class="time">${formatTime(message.created_at)}</span>
+                    </div>
+                </div>`;
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatTime(timestamp) {
+    if (!timestamp) return 'now';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
 
 function scrollToBottom() {
     chatBox.scrollTop = chatBox.scrollHeight;
@@ -100,4 +163,17 @@ function showNotification(message, type = "info") {
         setTimeout(() => notification.remove(), 300);
     }, 3000);
 }
+
+// Initialize SSE on page load
+document.addEventListener('DOMContentLoaded', () => {
+    initSSE();
+    scrollToBottom();
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    if (eventSource) {
+        eventSource.close();
+    }
+});
 

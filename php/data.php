@@ -1,6 +1,7 @@
 <?php
 // ============================================================================
-// FORMAT USER LIST DATA - SECURITY HARDENED
+// CYBER CHAT APP - FORMAT USER LIST DATA
+// Helper to generate user list HTML
 // ============================================================================
 
 if (!isset($query) || !isset($outgoing_id) || !isset($conn)) {
@@ -14,7 +15,8 @@ while ($row = $query->fetch_assoc()) {
         continue;
     }
     
-    $stmt = $conn->prepare("SELECT msg, outgoing_msg_id FROM messages 
+    // Get last message
+    $stmt = $conn->prepare("SELECT msg, outgoing_msg_id, created_at FROM messages 
                             WHERE (incoming_msg_id = ? AND outgoing_msg_id = ?) 
                                OR (incoming_msg_id = ? AND outgoing_msg_id = ?)
                             ORDER BY msg_id DESC LIMIT 1");
@@ -31,8 +33,10 @@ while ($row = $query->fetch_assoc()) {
     
     if ($result_msg->num_rows > 0 && isset($row2['msg'])) {
         $result = $row2['msg'];
+        $msg_time = isset($row2['created_at']) ? format_timestamp($row2['created_at']) : '';
     } else {
-        $result = "No message available";
+        $result = "Click to start chatting";
+        $msg_time = '';
     }
     
     if (strlen($result) > 28) {
@@ -47,38 +51,23 @@ while ($row = $query->fetch_assoc()) {
     }
     
     $offline = ($row['status'] == "Offline now") ? "offline" : "";
-    $hid_me = ($outgoing_id == $row['unique_id']) ? "hide" : "";
-    
-    $output .= '<a href="chat.php?user_id=' . escape_html($row['unique_id']) . '">
-                    <div class="content">
-                    <img src="php/images/' . escape_html($row['img']) . '" alt="' . escape_html($row['fname']) . '">
-                    <div class="details">
-                        <span>' . escape_html($row['fname']) . " " . escape_html($row['lname']) . '</span>
-                        <p>' . escape_html($you . $msg) . '</p>
-                    </div>
-                    </div>
-                    <div class="status-dot ' . $offline . '"><i class="fas fa-circle"></i></div>
-                </a>';
-}
-?>
-
+    $status_text = ($row['status'] == "Active now") ? "online" : "offline";
     
     $user_id = escape_html($row['unique_id']);
     $fname = escape_html($row['fname']);
     $lname = escape_html($row['lname']);
     $img = escape_html($row['img']);
-    $msg = escape_html($msg);
-    $you = escape_html($you);
+    $msg = escape_html($you . $msg);
     
-    $output .= '<a href="chat.php?user_id=' . $user_id . '">'
+    $output .= '<a href="chat.php?user_id=' . $user_id . '">
                     <div class="content">
-                    <img src="php/images/' . $img . '" alt="' . $fname . ' ' . $lname . '">
-                    <div class="details">
-                        <span>' . $fname . " " . $lname . '</span>
-                        <p>' . $you . $msg . '</p>
+                        <img src="php/images/' . $img . '" alt="' . $fname . ' ' . $lname . '">
+                        <div class="details">
+                            <span>' . $fname . ' ' . $lname . '</span>
+                            <p>' . $msg . '</p>
+                        </div>
                     </div>
-                    </div>
-                    <div class="status-dot ' . $offline . '"><i class="fas fa-circle"></i></div>
-                </a>';'
+                    <div class="status-dot ' . $offline . '" title="' . $status_text . '"><i class="fas fa-circle"></i></div>
+                </a>';
 }
 ?>

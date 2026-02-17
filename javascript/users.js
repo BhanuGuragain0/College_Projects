@@ -1,97 +1,92 @@
 const searchBar = document.querySelector(".search input"),
-    searchIcon = document.querySelector(".search button"),
-    usersList = document.querySelector(".users-list");
+    usersList = document.querySelector(".users-list"),
+    searchBtn = document.querySelector(".search button");
 
-let searchTimeout;
-let lastSearchTerm = "";
-
-searchIcon.onclick = () => {
+// Toggle search input
+searchBtn.onclick = () => {
     searchBar.classList.toggle("show");
-    searchIcon.classList.toggle("active");
+    searchBtn.classList.toggle("active");
     searchBar.focus();
-    if (searchBar.classList.contains("active")) {
+    if (searchBar.classList.contains("show")) {
         searchBar.value = "";
-        searchBar.classList.remove("active");
     }
 };
 
+// Search users
 searchBar.onkeyup = () => {
     let searchTerm = searchBar.value.trim();
-
     if (searchTerm !== "") {
         searchBar.classList.add("active");
     } else {
         searchBar.classList.remove("active");
     }
 
-    // Debounce search requests (wait 300ms after user stops typing)
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        if (searchTerm === lastSearchTerm) {
-            return; // Don't search if term hasn't changed
-        }
-        lastSearchTerm = searchTerm;
-
-        if (searchTerm === "") {
-            fetchUsers(); // Show all users if search is cleared
-            return;
-        }
-
-        fetch("php/search.php", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: `searchTerm=${encodeURIComponent(searchTerm)}`
+    fetch(`php/search.php?search=${encodeURIComponent(searchTerm)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                renderUsers(data.users);
+            } else {
+                usersList.innerHTML = `<div class="text">${data.message || 'No users found'}</div>`;
+            }
         })
-            .then(response => response.text())
-            .then(data => {
-                usersList.innerHTML = data;
-            })
-            .catch(error => {
-                console.error("Search error:", error);
-                showNotification("Search failed. Please try again.", "error");
-            });
-    }, 300); // Wait 300ms after user stops typing
+        .catch(error => {
+            console.error("Search error:", error);
+        });
 };
 
+// Fetch users list
 function fetchUsers() {
-    fetch("php/users.php", {
-        method: "GET"
-    })
-        .then(response => response.text())
+    fetch("php/users.php")
+        .then(response => response.json())
         .then(data => {
-            if (!searchBar.classList.contains("active")) {
-                usersList.innerHTML = data;
+            if (data.status === 'success') {
+                renderUsers(data.users);
+            } else {
+                usersList.innerHTML = `<div class="text">${data.message || 'No users available'}</div>`;
             }
         })
         .catch(error => {
             console.error("Fetch users error:", error);
+            usersList.innerHTML = '<div class="text">Error loading users</div>';
         });
 }
 
-// Fetch users every 3 seconds (optimized from 500ms - 83% reduction in requests)
+// Render users list
+function renderUsers(users) {
+    if (!users || users.length === 0) {
+        usersList.innerHTML = '<div class="text">No users available to chat</div>';
+        return;
+    }
+
+    let html = '';
+    users.forEach(user => {
+        const statusClass = user.status === 'Active now' ? '' : 'offline';
+        const statusText = user.status === 'Active now' ? 'online' : 'offline';
+        
+        html += `<a href="chat.php?user_id=${user.unique_id}">
+                    <div class="content">
+                        <img src="php/images/${user.img}" alt="${user.fname}">
+                        <div class="details">
+                            <span>${user.fname} ${user.lname}</span>
+                            <p>${user.status || 'Click to start chatting'}</p>
+                        </div>
+                    </div>
+                    <div class="status-dot ${statusClass}" title="${statusText}">
+                        <i class="fas fa-circle"></i>
+                    </div>
+                </a>`;
+    });
+    
+    usersList.innerHTML = html;
+}
+
+// Refresh users periodically
 setInterval(() => {
     if (!searchBar.classList.contains("active")) {
         fetchUsers();
     }
-}, 3000);
+}, 5000);
 
-// Initial fetch
-fetchUsers();
-
-function showNotification(message, type = "info") {
-    const notification = document.createElement("div");
-    notification.className = `notification notification-${type}`;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-        notification.classList.add("show");
-    }, 100);
-
-    setTimeout(() => {
-        notification.classList.remove("show");
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
-}
+// Initial load
+document.addEventListener('DOMContentLoaded', fetchUsers);
